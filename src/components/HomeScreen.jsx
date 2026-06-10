@@ -3,7 +3,7 @@ import { getLevelFromXP, getXPPercent } from '../utils/gameUtils';
 
 export default function HomeScreen({ subjects, streak, onStart }) {
   return (
-    <div className="screen">
+    <div className="screen-inner">
       <div className="home-header">
         <div>
           <p className="muted small">Good morning</p>
@@ -15,7 +15,7 @@ export default function HomeScreen({ subjects, streak, onStart }) {
         </div>
       </div>
 
-      <p className="section-label">choose a subject</p>
+      <p className="section-label">tap a subject to start</p>
 
       {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
         const xp = subjects[key]?.xp || 0;
@@ -32,10 +32,7 @@ export default function HomeScreen({ subjects, streak, onStart }) {
                 </span>
               </div>
               <div className="progress-track">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${pct}%`, background: cfg.bar }}
-                />
+                <div className="progress-fill" style={{ width: `${pct}%`, background: cfg.bar }} />
               </div>
             </div>
           </button>
@@ -43,7 +40,7 @@ export default function HomeScreen({ subjects, streak, onStart }) {
       })}
 
       <div className="divider" />
-      <p className="muted small center">Progress saves automatically in your browser</p>
+      <p className="muted small center">1 question per subject · progress saves in your browser</p>
     </div>
   );
 }

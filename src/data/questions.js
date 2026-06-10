@@ -59,4 +59,6 @@ export const SUBJECT_CONFIG = {
 export const XP_PER_CORRECT = 20;
 export const XP_PER_LEVEL = 100;
 export const MAX_LIVES = 3;
-export const QS_PER_SESSION = 5;
+export const QS_PER_SESSION = 1;       // 1 question per subject per daily session
+export const BONUS_QS = 4;             // bonus round length
+export const MAX_FIFTY_FIFTY = 3;      // 50/50 uses per day

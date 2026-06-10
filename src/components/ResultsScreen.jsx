@@ -1,22 +1,26 @@
-import { SUBJECT_CONFIG, QS_PER_SESSION, XP_PER_LEVEL } from '../data/questions';
+import { SUBJECT_CONFIG, XP_PER_LEVEL } from '../data/questions';
 import { getLevelFromXP, getXPPercent, getXPInLevel } from '../utils/gameUtils';
 
-export default function ResultsScreen({ result, subjects, streak, prevLevels, onHome, onRetry }) {
-  const { score, xpEarned, subject } = result;
+export default function ResultsScreen({ result, subjects, streak, prevLevels, onHome, onBonus }) {
+  const { score, xpEarned, subject, isBonus } = result;
+  const cfg = SUBJECT_CONFIG[subject];
   const newLevel = getLevelFromXP(subjects[subject]?.xp || 0);
   const leveledUp = newLevel > (prevLevels[subject] || 1);
+  const correct = score > 0;
 
   return (
-    <div className="screen">
-      <p className="title" style={{ marginBottom: '0.25rem' }}>Session complete</p>
+    <div className="screen-inner">
+      <p className="title" style={{ marginBottom: '0.25rem' }}>
+        {correct ? 'Nice work!' : 'Keep practising'}
+      </p>
       <p className="muted small" style={{ marginBottom: '1.25rem' }}>
-        {SUBJECT_CONFIG[subject].label} — session summary
+        {cfg.label}{isBonus ? ' · Bonus round' : ' · Daily question'}
       </p>
 
       <div className="stats-row">
         <div className="stat-box">
-          <p className="stat-num">{score} / {QS_PER_SESSION}</p>
-          <p className="muted small">correct</p>
+          <p className="stat-num">{correct ? '✓' : '✗'}</p>
+          <p className="muted small">{correct ? 'correct' : 'incorrect'}</p>
         </div>
         <div className="stat-box">
           <p className="stat-num">+{xpEarned}</p>
@@ -30,34 +34,38 @@ export default function ResultsScreen({ result, subjects, streak, prevLevels, on
 
       {leveledUp && (
         <div className="level-up-banner">
-          <strong>Level up!</strong> You reached Level {newLevel} in {SUBJECT_CONFIG[subject].label}.
+          <strong>Level up!</strong> You reached Level {newLevel} in {cfg.label}.
         </div>
       )}
 
       <div className="divider" />
       <p className="section-label">your progress</p>
 
-      {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
+      {Object.entries(SUBJECT_CONFIG).map(([key, c]) => {
         const xp = subjects[key]?.xp || 0;
         const lv = getLevelFromXP(xp);
         const pct = getXPPercent(xp);
         const xpIn = getXPInLevel(xp);
         return (
           <div key={key} className="topic-row">
-            <span className="topic-label">{cfg.label}</span>
+            <span className="topic-label">{c.label}</span>
             <div className="progress-track" style={{ flex: 1 }}>
-              <div className="progress-fill" style={{ width: `${pct}%`, background: cfg.bar }} />
+              <div className="progress-fill" style={{ width: `${pct}%`, background: c.bar }} />
             </div>
-            <span className="badge" style={{ background: cfg.bg, color: cfg.text, minWidth: 38, textAlign: 'center' }}>
+            <span className="badge" style={{ background: c.bg, color: c.text, minWidth: 38, textAlign: 'center' }}>
               Lv {lv}
             </span>
-            <span className="muted small xp-label">{xpIn}/{XP_PER_LEVEL} xp</span>
+            <span className="muted small xp-label">{xpIn}/{XP_PER_LEVEL}</span>
           </div>
         );
       })}
 
+      {!isBonus && (
+        <button className="btn-bonus" onClick={onBonus}>
+          Keep going — bonus round ↗
+        </button>
+      )}
       <button className="btn-primary" onClick={onHome}>Back to subjects</button>
-      <button className="btn-secondary" onClick={onRetry}>Play again</button>
     </div>
   );
 }
