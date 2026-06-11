@@ -1,49 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
 import { SUBJECT_CONFIG, XP_PER_CORRECT, MAX_FIFTY_FIFTY } from '../data/questions';
+import { SUBJECT_COLORS } from '../data/themes';
 
 export default function QuizScreen({
   subject, questions, totalSubjects, currentSubjectIndex,
-  isDaily, fiftyFiftyUses, onUseFiftyFifty,
-  onComplete, onHome
+  isDaily, fiftyFiftyUses, onUseFiftyFifty, onComplete, onHome
 }) {
   const cfg = SUBJECT_CONFIG[subject];
+  const sc = SUBJECT_COLORS[subject];
   const total = questions.length;
 
-  const [current, setCurrent]     = useState(0);
-  const [score, setScore]         = useState(0);
-  const [xpEarned, setXpEarned]   = useState(0);
-  const [selected, setSelected]   = useState(null);
-  const [answered, setAnswered]   = useState(false);
+  const [current, setCurrent]       = useState(0);
+  const [score, setScore]           = useState(0);
+  const [xpEarned, setXpEarned]     = useState(0);
+  const [selected, setSelected]     = useState(null);
+  const [answered, setAnswered]     = useState(false);
   const [eliminated, setEliminated] = useState([]);
-  const [animState, setAnimState] = useState('');   // 'correct' | 'wrong' | ''
-  const [xpFloat, setXpFloat]     = useState(false);
-  const [questionAnim, setQuestionAnim] = useState('question-enter');
+  const [xpFloat, setXpFloat]       = useState(false);
+  const [qAnim, setQAnim]           = useState('q-enter');
   const cardRef = useRef(null);
 
   const q = questions[current];
   const isLast = current + 1 >= total;
-
-  // Daily progress: how far through all subjects
-  const overallProgress = isDaily
-    ? Math.round(((currentSubjectIndex) / totalSubjects) * 100)
+  const overallPct = isDaily
+    ? Math.round((currentSubjectIndex / totalSubjects) * 100)
     : Math.round((current / total) * 100);
 
   useEffect(() => {
-    setSelected(null);
-    setAnswered(false);
-    setEliminated([]);
-    setAnimState('');
+    setSelected(null); setAnswered(false); setEliminated([]);
     setXpFloat(false);
-    setQuestionAnim('question-enter');
-    const t = setTimeout(() => setQuestionAnim(''), 350);
+    setQAnim('q-enter');
+    const t = setTimeout(() => setQAnim(''), 300);
     return () => clearTimeout(t);
-  }, [current]);
+  }, [current, subject]);
 
   function handleFiftyFifty() {
     if (fiftyFiftyUses <= 0 || answered || eliminated.length > 0) return;
     const wrong = q.opts.map((_, i) => i).filter(i => i !== q.a);
-    const shuffled = [...wrong].sort(() => Math.random() - 0.5);
-    setEliminated(shuffled.slice(0, 2));
+    setEliminated([...wrong].sort(() => Math.random() - 0.5).slice(0, 2));
     onUseFiftyFifty();
   }
 
@@ -51,72 +45,57 @@ export default function QuizScreen({
     if (answered || eliminated.includes(idx)) return;
     setSelected(idx);
     setAnswered(true);
-
-    const correct = idx === q.a;
-    if (correct) {
+    if (idx === q.a) {
       setScore(s => s + 1);
       setXpEarned(x => x + XP_PER_CORRECT);
-      setAnimState('correct');
       setXpFloat(true);
       setTimeout(() => setXpFloat(false), 1200);
     } else {
-      setAnimState('wrong');
-      if (cardRef.current) {
-        cardRef.current.classList.add('shake');
-        setTimeout(() => cardRef.current?.classList.remove('shake'), 500);
-      }
+      cardRef.current?.classList.add('shake');
+      setTimeout(() => cardRef.current?.classList.remove('shake'), 450);
     }
   }
 
   function handleNext() {
-    const finalScore  = score + (selected === q.a ? 0 : 0);
-    const finalXp     = xpEarned;
-    if (isLast) {
-      onComplete({ score, xpEarned, subject, correct: selected === q.a });
-    } else {
-      setCurrent(c => c + 1);
-    }
+    const finalScore = score + (selected === q.a ? 1 : 0) - (selected === q.a ? 1 : 0);
+    onComplete({ score, xpEarned, subject, correct: selected === q.a });
   }
 
   function getOptClass(idx) {
-    if (eliminated.includes(idx)) return 'opt-btn eliminated';
-    if (!answered) return 'opt-btn';
-    if (idx === q.a) return 'opt-btn correct';
-    if (idx === selected && idx !== q.a) return 'opt-btn wrong';
-    return 'opt-btn dim';
+    if (eliminated.includes(idx)) return 'opt opt--elim';
+    if (!answered) return 'opt';
+    if (idx === q.a) return 'opt opt--correct';
+    if (idx === selected) return 'opt opt--wrong';
+    return 'opt opt--dim';
   }
 
   return (
     <div className="screen-inner" ref={cardRef}>
-      {/* Header */}
       <div className="quiz-header">
         <button className="back-btn" onClick={onHome}>← Back</button>
-        <span className="badge" style={{background: cfg.bg, color: cfg.text}}>
-          {cfg.emoji} {cfg.label}{isDaily ? ` · ${currentSubjectIndex + 1}/${totalSubjects}` : ''}
-        </span>
+        <div className="quiz-badge-wrap">
+          <div className="sub-tile sub-tile--sm" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+            {cfg.label.slice(0, 2)}
+          </div>
+          <span className="quiz-subject-label">
+            {cfg.label}{isDaily ? ` · ${currentSubjectIndex + 1}/${totalSubjects}` : ''}
+          </span>
+        </div>
         <button
-          className={`fifty-btn${fiftyFiftyUses <= 0 || answered || eliminated.length > 0 ? ' fifty-disabled' : ''}`}
+          className={`fifty-btn${(fiftyFiftyUses <= 0 || answered || eliminated.length > 0) ? ' fifty-btn--off' : ''}`}
           onClick={handleFiftyFifty}
-          aria-label="Use 50/50 lifeline"
         >
           50/50 <span className="fifty-count">{fiftyFiftyUses}</span>
         </button>
       </div>
 
-      {/* Progress bar */}
-      <div className="progress-track" style={{marginBottom:'1rem'}}>
-        <div className="progress-fill" style={{
-          width: `${isDaily ? overallProgress : Math.round((current/total)*100)}%`,
-          background: cfg.bar,
-          transition: 'width 0.4s ease'
-        }}/>
+      <div className="prog-track">
+        <div className="prog-fill" style={{ width: `${overallPct}%` }} />
       </div>
 
-      {/* Question */}
-      <p className={`question-text ${questionAnim}`}>{q.q}</p>
+      <p className={`question ${qAnim}`}>{q.q}</p>
 
-      {/* Options */}
-      <div className="options">
+      <div className="opts">
         {q.opts.map((opt, i) => (
           <button
             key={i}
@@ -124,18 +103,11 @@ export default function QuizScreen({
             onClick={() => handleAnswer(i)}
             disabled={answered || eliminated.includes(i)}
           >
-            {/* Option text always left */}
             <span className="opt-text">{eliminated.includes(i) ? <s>{opt}</s> : opt}</span>
-            {/* Right side label — fixed width so it never shifts layout */}
             <span className="opt-right">
-              {answered && i === q.a && (
-                <span className="opt-label opt-label--correct">correct</span>
-              )}
-              {answered && i === selected && i !== q.a && (
-                <span className="opt-label opt-label--wrong">your answer</span>
-              )}
+              {answered && i === q.a && <span className="opt-chip opt-chip--ok">correct</span>}
+              {answered && i === selected && i !== q.a && <span className="opt-chip opt-chip--no">your answer</span>}
             </span>
-            {/* XP float — absolutely positioned so it doesn't affect layout */}
             {answered && i === selected && i === q.a && xpFloat && (
               <span className="xp-float">+{XP_PER_CORRECT} xp</span>
             )}
@@ -143,26 +115,18 @@ export default function QuizScreen({
         ))}
       </div>
 
-      {/* Feedback — always rendered, visibility toggled to prevent layout shift */}
       <div className="feedback-area">
-        <div
-          className={`feedback feedback--${selected === q.a ? 'correct' : 'wrong'}${answered ? ' slide-in feedback--visible' : ' feedback--hidden'}`}
-        >
-          <strong>{selected === q.a ? 'Correct!' : 'Not quite.'}</strong>
-          {' '}{q.exp}
+        <div className={`feedback${answered ? (selected === q.a ? ' feedback--correct' : ' feedback--wrong') : ' feedback--hidden'}`}>
+          <strong>{selected === q.a ? 'Correct!' : 'Not quite.'}</strong>{' '}{q.exp}
         </div>
       </div>
 
-      {/* Next — always in DOM, fades in */}
       <button
         className="btn-primary"
         onClick={handleNext}
-        style={{opacity: answered ? 1 : 0, pointerEvents: answered ? 'auto' : 'none', transition: 'opacity 0.25s'}}
+        style={{ opacity: answered ? 1 : 0, pointerEvents: answered ? 'auto' : 'none', transition: 'opacity 0.2s' }}
       >
-        {isLast
-          ? (isDaily ? 'Next subject →' : 'See results →')
-          : 'Next question →'
-        }
+        {isLast ? (isDaily ? 'Next subject →' : 'See results →') : 'Next question →'}
       </button>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { QUESTIONS, SUBJECT_CONFIG, PRACTICE_QS, MAX_FIFTY_FIFTY } from './data/questions';
 import { useStorage } from './hooks/useStorage';
+import { useTheme } from './hooks/useTheme';
 import {
   shuffleArray, updateStreak, getInitialSubjectState,
   getLevelFromXP, getTodayKey, isDailyComplete, getShuffledDailyOrder
@@ -18,22 +19,22 @@ const DEFAULT_SUBJECTS = Object.fromEntries(
 );
 
 export default function App() {
+  const { themeKey, setThemeKey } = useTheme();
   const [subjects, setSubjects]     = useStorage('mm_subjects_v2', DEFAULT_SUBJECTS);
-  const [streak, setStreak]         = useStorage('mm_streak_v2', { count:0, lastPlayed:null, playedDates:[] });
-  const [dailyState, setDailyState] = useStorage('mm_daily_v2', { completedDate:null, results:{} });
-  const [fiftyFifty, setFiftyFifty] = useStorage('mm_5050_v2', { uses: MAX_FIFTY_FIFTY, lastReset:null });
+  const [streak, setStreak]         = useStorage('mm_streak_v2', { count: 0, lastPlayed: null, playedDates: [] });
+  const [dailyState, setDailyState] = useStorage('mm_daily_v2', { completedDate: null, results: {} });
+  const [fiftyFifty, setFiftyFifty] = useStorage('mm_5050_v2', { uses: MAX_FIFTY_FIFTY, lastReset: null });
 
-  const [screen, setScreen]                   = useState(SCREENS.HOME);
-  const [currentSubject, setCurrentSubject]   = useState(null);
+  const [screen, setScreen]                     = useState(SCREENS.HOME);
+  const [currentSubject, setCurrentSubject]     = useState(null);
   const [sessionQuestions, setSessionQuestions] = useState([]);
-  const [isDaily, setIsDaily]                 = useState(false);
-  const [dailyQueue, setDailyQueue]           = useState([]);
-  const [dailyQueueIndex, setDailyQueueIndex] = useState(0);
-  const [dailyResults, setDailyResults]       = useState({});
-  const [practiceResult, setPracticeResult]   = useState(null);
-  const [prevLevels, setPrevLevels]           = useState({});
+  const [isDaily, setIsDaily]                   = useState(false);
+  const [dailyQueue, setDailyQueue]             = useState([]);
+  const [dailyQueueIndex, setDailyQueueIndex]   = useState(0);
+  const [dailyResults, setDailyResults]         = useState({});
+  const [practiceResult, setPracticeResult]     = useState(null);
+  const [prevLevels, setPrevLevels]             = useState({});
 
-  // 50/50 daily reset
   function getFiftyFiftyUses() {
     const today = getTodayKey();
     if (fiftyFifty.lastReset !== today) {
@@ -57,7 +58,6 @@ export default function App() {
     setPrevLevels(levels);
   }
 
-  // Start daily mode
   function startDaily() {
     if (isDailyComplete(dailyState)) return;
     capturePrevLevels();
@@ -66,27 +66,22 @@ export default function App() {
     setDailyQueueIndex(0);
     setDailyResults({});
     setIsDaily(true);
-    launchSubject(order[0], 1); // always 1 question per subject in daily
+    const pool = shuffleArray(QUESTIONS[order[0]]).slice(0, 1);
+    setCurrentSubject(order[0]);
+    setSessionQuestions(pool);
+    setScreen(SCREENS.QUIZ);
   }
 
-  // Start practice mode
   function startPractice(sub) {
     capturePrevLevels();
     setIsDaily(false);
-    launchSubject(sub, PRACTICE_QS);
-  }
-
-  // questionCount passed explicitly — never relies on isDaily state which may not have flushed
-  function launchSubject(sub, questionCount) {
-    const pool = shuffleArray(QUESTIONS[sub]).slice(0, questionCount);
+    const pool = shuffleArray(QUESTIONS[sub]).slice(0, PRACTICE_QS);
     setCurrentSubject(sub);
     setSessionQuestions(pool);
     setScreen(SCREENS.QUIZ);
   }
 
-  // Called when a quiz question (or set) is answered
   function handleQuizComplete({ score, xpEarned, subject, correct }) {
-    // Award XP
     if (xpEarned > 0) {
       setSubjects(prev => ({
         ...prev,
@@ -97,18 +92,14 @@ export default function App() {
     if (isDaily) {
       const newResults = { ...dailyResults, [subject]: correct };
       setDailyResults(newResults);
-
       const nextIndex = dailyQueueIndex + 1;
       if (nextIndex < dailyQueue.length) {
-        // More subjects to go — always 1 question each
         setDailyQueueIndex(nextIndex);
         const nextSub = dailyQueue[nextIndex];
         const pool = shuffleArray(QUESTIONS[nextSub]).slice(0, 1);
         setCurrentSubject(nextSub);
         setSessionQuestions(pool);
-        // stay on QUIZ screen — question slides in
       } else {
-        // All subjects done
         const today = getTodayKey();
         setDailyState({ completedDate: today, results: newResults });
         setStreak(prev => {
@@ -131,8 +122,6 @@ export default function App() {
     setIsDaily(false);
   }
 
-  const fiftyFiftyUses = getFiftyFiftyUses();
-
   return (
     <div className="app-container">
       <div className="card-fixed">
@@ -141,6 +130,8 @@ export default function App() {
             subjects={subjects}
             streak={streak}
             dailyState={dailyState}
+            themeKey={themeKey}
+            onSetTheme={setThemeKey}
             onStartDaily={startDaily}
             onStartPractice={startPractice}
           />
@@ -153,7 +144,7 @@ export default function App() {
             totalSubjects={dailyQueue.length || 1}
             currentSubjectIndex={dailyQueueIndex}
             isDaily={isDaily}
-            fiftyFiftyUses={fiftyFiftyUses}
+            fiftyFiftyUses={getFiftyFiftyUses()}
             onUseFiftyFifty={useFiftyFifty}
             onComplete={handleQuizComplete}
             onHome={goHome}
@@ -166,7 +157,7 @@ export default function App() {
             streak={streak}
             prevLevels={prevLevels}
             onHome={goHome}
-            onPractice={(sub) => { goHome(); setTimeout(() => startPractice(sub), 50); }}
+            onPractice={sub => { goHome(); setTimeout(() => startPractice(sub), 50); }}
           />
         )}
         {screen === SCREENS.PRACTICE_RESULTS && practiceResult && (

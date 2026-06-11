@@ -1,93 +1,83 @@
+import { useState } from 'react';
 import { SUBJECT_CONFIG, XP_PER_LEVEL } from '../data/questions';
+import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak } from '../utils/gameUtils';
 import { getDailyQuote } from '../data/quotes';
-import { useState } from 'react';
 
 export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, onHome, onPractice }) {
-  const quote = getDailyQuote();
   const [savedQuote, setSavedQuote] = useState(false);
+  const quote = getDailyQuote();
   const weekDays = getWeekStreak(streak);
-
   const totalCorrect = Object.values(results).filter(Boolean).length;
   const totalSubjects = Object.keys(SUBJECT_CONFIG).length;
-
-  const levelUps = Object.keys(SUBJECT_CONFIG).filter(key => {
-    const newLv = getLevelFromXP(subjects[key]?.xp || 0);
-    return newLv > (prevLevels[key] || 1);
+  const wrongSubjects = Object.entries(results).filter(([, v]) => v === false).map(([k]) => k);
+  const levelUps = Object.keys(SUBJECT_CONFIG).filter(k => {
+    return getLevelFromXP(subjects[k]?.xp || 0) > (prevLevels[k] || 1);
   });
-
-  const wrongSubjects = Object.entries(results)
-    .filter(([, correct]) => correct === false)
-    .map(([key]) => key);
 
   return (
     <div className="screen-inner">
-
-      {/* Score summary */}
-      <div style={{textAlign:'center', marginBottom:'1.25rem'}}>
-        <div className="complete-icon">
-          <span style={{fontSize:28}}>{totalCorrect === totalSubjects ? '🎉' : totalCorrect >= 3 ? '👍' : '💪'}</span>
+      <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+        <div className="result-icon">
+          <span style={{ fontSize: 28 }}>
+            {totalCorrect === totalSubjects ? '🎉' : totalCorrect >= 3 ? '👍' : '💪'}
+          </span>
         </div>
-        <p className="title" style={{marginBottom:4}}>
+        <p className="app-title" style={{ marginBottom: 4 }}>
           {totalCorrect === totalSubjects ? 'Perfect score!' : `${totalCorrect} of ${totalSubjects} correct`}
         </p>
-        <p className="muted small">{streak.count || 1} day streak 🔥</p>
+        <p className="t-secondary small">{streak.count || 1} day streak 🔥</p>
       </div>
 
       {/* Week calendar */}
       <div className="week-row">
         {weekDays.map((d, i) => (
           <div key={i} className="week-day">
-            <div className={`week-dot ${d.played ? 'week-dot--played' : ''} ${d.isToday ? 'week-dot--today' : ''} ${d.isFuture ? 'week-dot--future' : ''}`}/>
-            <span className={`week-label ${d.isToday ? 'week-label--today' : ''}`}>{d.label}</span>
+            <div className={`week-dot${d.played ? ' week-dot--done' : d.isToday ? ' week-dot--today' : ' week-dot--empty'}`} />
+            <span className={`week-lbl${d.isToday ? ' week-lbl--today' : ''}`}>{d.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Level ups */}
       {levelUps.length > 0 && (
         <div className="levelup-banner">
-          <span style={{fontSize:16}}>🏆</span>
-          <span>
-            <strong>Level up{levelUps.length > 1 ? 's' : ''}!</strong>
-            {' '}{levelUps.map(k => SUBJECT_CONFIG[k].label).join(', ')}
-          </span>
+          🏆 <strong>Level up{levelUps.length > 1 ? 's' : ''}!</strong>{' '}
+          {levelUps.map(k => SUBJECT_CONFIG[k].label).join(', ')}
         </div>
       )}
 
-      <div className="divider"/>
-
-      {/* Subject breakdown */}
+      <div className="divider" />
       <p className="section-label">today's results</p>
+
       {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
         const xp = subjects[key]?.xp || 0;
         const lv = getLevelFromXP(xp);
         const pct = getXPPercent(xp);
+        const sc = SUBJECT_COLORS[key];
         const correct = results[key];
         return (
           <div key={key} className="rc-row">
-            <div className="rc-icon" style={{background: cfg.bg}}>
-              <span style={{fontSize:13}}>{cfg.emoji}</span>
+            <div className="rc-tile" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+              {cfg.label.slice(0, 2)}
             </div>
-            <span className="topic-label">{cfg.label}</span>
-            <div className="xp-bar" style={{flex:1}}>
-              <div className="xp-f" style={{width:`${pct}%`, background: cfg.bar}}/>
+            <span className="rc-name">{cfg.label}</span>
+            <div className="rc-bar">
+              <div className="rc-fill" style={{ width: `${pct}%`, background: sc.bar }} />
             </div>
-            <span className="badge" style={{background: cfg.bg, color: cfg.text, minWidth:36, textAlign:'center'}}>
+            <span className="lv-badge" style={{ background: sc.bg, color: sc.color, minWidth: 34, textAlign: 'center' }}>
               Lv {lv}
             </span>
-            {correct === true && <span className="result-icon result-icon--correct">✓</span>}
-            {correct === false && <span className="result-icon result-icon--wrong">✗</span>}
+            {correct === true  && <span className="result-tick correct">✓</span>}
+            {correct === false && <span className="result-tick wrong">✗</span>}
           </div>
         );
       })}
 
-      {/* Nudge to practice */}
       {wrongSubjects.length > 0 && (
         <div className="nudge-box">
-          <span style={{fontSize:14}}>💡</span>
+          <span style={{ fontSize: 15 }}>💡</span>
           <div>
-            <p style={{fontSize:13, color:'var(--color-text-primary)', margin:0}}>
+            <p style={{ fontSize: 13, color: 'var(--text)', margin: 0 }}>
               Struggled with {wrongSubjects.map(k => SUBJECT_CONFIG[k].label).join(' & ')}?
             </p>
             <button className="nudge-link" onClick={() => onPractice(wrongSubjects[0])}>
@@ -97,7 +87,7 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
         </div>
       )}
 
-      <div className="divider"/>
+      <div className="divider" />
 
       {/* Quote */}
       <div className="quote-box">
@@ -105,9 +95,8 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
         <div className="quote-footer">
           <p className="quote-author">— {quote.author}</p>
           <button
-            className={`quote-save ${savedQuote ? 'quote-save--saved' : ''}`}
+            className={`quote-heart${savedQuote ? ' quote-heart--saved' : ''}`}
             onClick={() => setSavedQuote(s => !s)}
-            aria-label="Save quote"
           >
             {savedQuote ? '♥' : '♡'}
           </button>
