@@ -66,18 +66,19 @@ export default function App() {
     setDailyQueueIndex(0);
     setDailyResults({});
     setIsDaily(true);
-    launchSubject(order[0]);
+    launchSubject(order[0], 1); // always 1 question per subject in daily
   }
 
   // Start practice mode
   function startPractice(sub) {
     capturePrevLevels();
     setIsDaily(false);
-    launchSubject(sub);
+    launchSubject(sub, PRACTICE_QS);
   }
 
-  function launchSubject(sub) {
-    const pool = shuffleArray(QUESTIONS[sub]).slice(0, isDaily ? 1 : PRACTICE_QS);
+  // questionCount passed explicitly — never relies on isDaily state which may not have flushed
+  function launchSubject(sub, questionCount) {
+    const pool = shuffleArray(QUESTIONS[sub]).slice(0, questionCount);
     setCurrentSubject(sub);
     setSessionQuestions(pool);
     setScreen(SCREENS.QUIZ);
@@ -99,7 +100,7 @@ export default function App() {
 
       const nextIndex = dailyQueueIndex + 1;
       if (nextIndex < dailyQueue.length) {
-        // More subjects to go
+        // More subjects to go — always 1 question each
         setDailyQueueIndex(nextIndex);
         const nextSub = dailyQueue[nextIndex];
         const pool = shuffleArray(QUESTIONS[nextSub]).slice(0, 1);
