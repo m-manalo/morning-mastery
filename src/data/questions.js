@@ -46,19 +46,32 @@ export const QUESTIONS = {
     { q: "What is the sum of angles in a triangle?", opts: ["90°","120°","180°","360°"], a: 2, exp: "The interior angles of any triangle always sum to 180°." },
     { q: "What is 3/4 expressed as a decimal?", opts: ["0.34","0.7","0.75","0.8"], a: 2, exp: "3 ÷ 4 = 0.75." },
     { q: "How many degrees are in a full circle?", opts: ["180°","270°","360°","400°"], a: 2, exp: "A full rotation is 360°, a convention from ancient Babylonian astronomy." }
+  ],
+  socialstudies: [
+    { q: "How many members are in the UK House of Commons?", opts: ["450","550","650","750"], a: 2, exp: "The House of Commons has 650 elected MPs, each representing a constituency." },
+    { q: "What does GDP stand for?", opts: ["General Domestic Product","Gross Domestic Product","Global Development Plan","Government Debt Proportion"], a: 1, exp: "GDP — Gross Domestic Product — measures the total value of goods and services a country produces." },
+    { q: "Which organisation has 193 member states?", opts: ["NATO","European Union","United Nations","World Bank"], a: 2, exp: "The United Nations has 193 member states, making it the largest international organisation." },
+    { q: "What is inflation?", opts: ["A rise in unemployment","A fall in the stock market","A general rise in prices over time","A government spending cut"], a: 2, exp: "Inflation is the rate at which prices for goods and services rise, reducing purchasing power." },
+    { q: "In which year did the United Kingdom vote to leave the European Union?", opts: ["2014","2015","2016","2017"], a: 2, exp: "The Brexit referendum took place on 23 June 2016, with 52% voting to leave." },
+    { q: "What is the name of the process by which citizens vote to choose their representatives?", opts: ["Referendum","Election","Census","Inauguration"], a: 1, exp: "An election is a formal process where citizens cast votes to choose representatives or decide on issues." },
+    { q: "What does the term 'human rights' refer to?", opts: ["Rights given by employers","Rights earned through work","Basic rights every person is entitled to","Rights granted by a country's government"], a: 2, exp: "Human rights are fundamental rights every person has regardless of nationality, age, or background." },
+    { q: "Which document begins with 'We the People'?", opts: ["The Declaration of Independence","The US Constitution","The Bill of Rights","The Magna Carta"], a: 1, exp: "The US Constitution opens with 'We the People', establishing the authority of citizens over government." },
+    { q: "What is the role of a central bank?", opts: ["To lend money to individuals","To manage a country's currency and money supply","To collect taxes","To run the stock market"], a: 1, exp: "Central banks, like the Bank of England, manage monetary policy and maintain financial stability." },
+    { q: "What is a democracy?", opts: ["Rule by the military","Rule by the wealthiest","Rule by the people through elected representatives","Rule by a single leader"], a: 2, exp: "Democracy is a system of government where citizens hold power, typically through elected representatives." }
   ]
 };
 
 export const SUBJECT_CONFIG = {
-  science:   { label: "Science",   emoji: "🔬", bg: "#EEEDFE", text: "#3C3489", bar: "#7F77DD" },
-  history:   { label: "History",   emoji: "📜", bg: "#E1F5EE", text: "#085041", bar: "#1D9E75" },
-  geography: { label: "Geography", emoji: "🌍", bg: "#FAEEDA", text: "#633806", bar: "#EF9F27" },
-  maths:     { label: "Maths",     emoji: "🔢", bg: "#FAECE7", text: "#712B13", bar: "#D85A30" }
+  science:      { label: "Science",       emoji: "🔬", bg: "#EEEDFE", text: "#3C3489", bar: "#7F77DD" },
+  history:      { label: "History",       emoji: "📜", bg: "#E1F5EE", text: "#085041", bar: "#1D9E75" },
+  geography:    { label: "Geography",     emoji: "🌍", bg: "#FAEEDA", text: "#633806", bar: "#EF9F27" },
+  maths:        { label: "Maths",         emoji: "🔢", bg: "#FAECE7", text: "#712B13", bar: "#D85A30" },
+  socialstudies:{ label: "Social Studies",emoji: "🏛️", bg: "#E6F1FB", text: "#0C447C", bar: "#378ADD" }
 };
 
+export const DAILY_SUBJECT_ORDER = ["science","history","geography","maths","socialstudies"];
+
 export const XP_PER_CORRECT = 20;
-export const XP_PER_LEVEL = 100;
-export const MAX_LIVES = 3;
-export const QS_PER_SESSION = 1;       // 1 question per subject per daily session
-export const BONUS_QS = 4;             // bonus round length
-export const MAX_FIFTY_FIFTY = 3;      // 50/50 uses per day
+export const XP_PER_LEVEL   = 100;
+export const MAX_FIFTY_FIFTY = 3;
+export const PRACTICE_QS    = 5;
