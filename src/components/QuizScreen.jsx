@@ -18,7 +18,10 @@ export default function QuizScreen({
   const [eliminated, setEliminated] = useState([]);
   const [xpFloat, setXpFloat]       = useState(false);
   const [qAnim, setQAnim]           = useState('q-enter');
-  const cardRef = useRef(null);
+  const cardRef    = useRef(null);
+  const scoreRef   = useRef(0);
+  const xpRef      = useRef(0);
+  const selectedRef = useRef(null);
 
   const q = questions[current];
   const isLast = current + 1 >= total;
@@ -29,6 +32,10 @@ export default function QuizScreen({
   useEffect(() => {
     setSelected(null); setAnswered(false); setEliminated([]);
     setXpFloat(false);
+    setScore(0); setXpEarned(0);
+    scoreRef.current = 0;
+    xpRef.current = 0;
+    selectedRef.current = null;
     setQAnim('q-enter');
     const t = setTimeout(() => setQAnim(''), 300);
     return () => clearTimeout(t);
@@ -44,10 +51,13 @@ export default function QuizScreen({
   function handleAnswer(idx) {
     if (answered || eliminated.includes(idx)) return;
     setSelected(idx);
+    selectedRef.current = idx;
     setAnswered(true);
     if (idx === q.a) {
-      setScore(s => s + 1);
-      setXpEarned(x => x + XP_PER_CORRECT);
+      scoreRef.current += 1;
+      xpRef.current += XP_PER_CORRECT;
+      setScore(scoreRef.current);
+      setXpEarned(xpRef.current);
       setXpFloat(true);
       setTimeout(() => setXpFloat(false), 1200);
     } else {
@@ -57,8 +67,17 @@ export default function QuizScreen({
   }
 
   function handleNext() {
-    const finalScore = score + (selected === q.a ? 1 : 0) - (selected === q.a ? 1 : 0);
-    onComplete({ score, xpEarned, subject, correct: selected === q.a });
+    if (isLast) {
+      // Use refs — guaranteed to have the latest values, unlike state which may not have flushed
+      onComplete({
+        score:   scoreRef.current,
+        xpEarned: xpRef.current,
+        subject,
+        correct: selectedRef.current === q.a
+      });
+    } else {
+      setCurrent(c => c + 1);
+    }
   }
 
   function getOptClass(idx) {
@@ -92,6 +111,11 @@ export default function QuizScreen({
       <div className="prog-track">
         <div className="prog-fill" style={{ width: `${overallPct}%` }} />
       </div>
+      {!isDaily && (
+        <p className="t-secondary small" style={{ marginBottom: '0.5rem' }}>
+          Question {current + 1} of {total}
+        </p>
+      )}
 
       <p className={`question ${qAnim}`}>{q.q}</p>
 
