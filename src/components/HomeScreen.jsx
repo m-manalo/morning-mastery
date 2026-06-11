@@ -92,6 +92,18 @@ export default function HomeScreen({ subjects, streak, dailyState, onStartDaily,
 
       <div className="divider"/>
       <p className="muted small center">progress saves in your browser</p>
+
+      {/* Dev reset — remove before going public */}
+      <button
+        className="dev-reset"
+        onClick={() => {
+          ['mm_subjects_v2','mm_streak_v2','mm_daily_v2','mm_5050_v2','mm_seen_quotes','mm_daily_quote']
+            .forEach(k => localStorage.removeItem(k));
+          window.location.reload();
+        }}
+      >
+        dev reset
+      </button>
     </div>
   );
 }

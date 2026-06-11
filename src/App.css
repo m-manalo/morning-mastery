@@ -41,14 +41,17 @@ body {
   border-radius: var(--radius-lg);
   border: 0.5px solid var(--border);
   height: var(--card-height);
+  width: 100%;
   overflow: hidden;
   position: relative;
 }
 
 .screen-inner {
   height: 100%;
+  width: 100%;
   padding: 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -174,58 +177,94 @@ body {
 @keyframes questionIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ── Options ── */
-.options { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+.options { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; width: 100%; }
 .opt-btn {
-  width: 100%; padding: 11px 13px;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 13px;
   background: var(--bg);
   border: 0.5px solid var(--border-hover);
   border-radius: var(--radius);
   font-size: 13px; color: var(--text);
   cursor: pointer; text-align: left;
   display: flex; justify-content: space-between; align-items: center;
-  transition: border-color 0.12s, background 0.12s, transform 0.12s;
+  position: relative;
+  transition: border-color 0.12s, background 0.12s;
+  overflow: hidden;
 }
-.opt-btn:hover:not(:disabled) { border-color: #7F77DD; transform: translateX(2px); }
+.opt-btn:hover:not(:disabled) { border-color: #7F77DD; }
 .opt-btn:disabled { cursor: default; }
 .opt-btn.correct {
   background: #EAF3DE; border-color: #639922; color: #27500A;
   animation: correctPop 0.3s ease;
 }
-@keyframes correctPop { 0%{transform:scale(1)} 40%{transform:scale(1.025)} 100%{transform:scale(1)} }
+@keyframes correctPop { 0%{transform:scale(1)} 40%{transform:scale(1.02)} 100%{transform:scale(1)} }
 .opt-btn.wrong   { background: #FCEBEB; border-color: #A32D2D; color: #791F1F; }
 .opt-btn.dim     { opacity: 0.38; }
 .opt-btn.eliminated { opacity: 0.22; cursor: not-allowed; }
 
+/* Option text stays left, never wraps awkwardly */
+.opt-text { flex: 1; min-width: 0; text-align: left; }
+
+/* Right label — fixed width so it never causes reflow */
+.opt-right {
+  flex-shrink: 0;
+  width: 80px;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 .opt-label {
   font-size: 10px; font-weight: 500;
-  padding: 1px 7px; border-radius: 10px; flex-shrink: 0;
+  padding: 1px 7px; border-radius: 10px;
+  white-space: nowrap;
 }
 .opt-label--correct { background: #EAF3DE; color: #3B6D11; border: 0.5px solid #C0DD97; }
 .opt-label--wrong   { background: #FCEBEB; color: #A32D2D; border: 0.5px solid #F09595; }
 
+/* XP float — absolutely positioned so it NEVER shifts layout */
 .xp-float {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 11px; font-weight: 500;
   color: #3B6D11; background: #EAF3DE;
   border-radius: 12px; padding: 2px 8px;
+  pointer-events: none;
   animation: floatUp 1s ease forwards;
-  flex-shrink: 0;
+  z-index: 2;
 }
-@keyframes floatUp { 0%{opacity:1;transform:translateY(0)} 60%{opacity:1;transform:translateY(-6px)} 100%{opacity:0;transform:translateY(-12px)} }
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(-50%); }
+  60%  { opacity: 1; transform: translateY(calc(-50% - 10px)); }
+  100% { opacity: 0; transform: translateY(calc(-50% - 20px)); }
+}
 
 /* ── Card shake animation ── */
 .shake { animation: shake 0.45s ease; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 
 /* ── Feedback ── */
-.feedback-area { margin-top: 10px; min-height: 58px; flex-shrink: 0; }
+.feedback-area {
+  margin-top: 10px;
+  height: 68px;
+  flex-shrink: 0;
+  width: 100%;
+}
 .feedback {
   border-radius: var(--radius);
   padding: 10px 12px;
   font-size: 12px; line-height: 1.5;
+  width: 100%;
+  box-sizing: border-box;
 }
 .feedback--correct { background: #EAF3DE; color: #27500A; }
 .feedback--wrong   { background: #FCEBEB; color: #791F1F; }
-.feedback-placeholder { height: 58px; }
+.feedback--visible { animation: slideIn 0.25s ease; }
+.feedback--hidden  { visibility: hidden; }
 .slide-in { animation: slideIn 0.25s ease; }
 @keyframes slideIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
 
@@ -361,6 +400,21 @@ body {
 }
 .quote-save:hover { transform: scale(1.2); }
 .quote-save--saved { color: #E24B4A; }
+
+/* ── Dev reset ── */
+.dev-reset {
+  margin-top: auto;
+  padding-top: 1rem;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.4;
+  text-align: center;
+  width: 100%;
+}
+.dev-reset:hover { opacity: 1; color: #A32D2D; }
 
 /* ── Mobile ── */
 @media (max-width: 520px) {

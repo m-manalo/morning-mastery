@@ -124,13 +124,18 @@ export default function QuizScreen({
             onClick={() => handleAnswer(i)}
             disabled={answered || eliminated.includes(i)}
           >
-            <span>{eliminated.includes(i) ? <s>{opt}</s> : opt}</span>
-            {answered && i === q.a && (
-              <span className="opt-label opt-label--correct">correct</span>
-            )}
-            {answered && i === selected && i !== q.a && (
-              <span className="opt-label opt-label--wrong">your answer</span>
-            )}
+            {/* Option text always left */}
+            <span className="opt-text">{eliminated.includes(i) ? <s>{opt}</s> : opt}</span>
+            {/* Right side label — fixed width so it never shifts layout */}
+            <span className="opt-right">
+              {answered && i === q.a && (
+                <span className="opt-label opt-label--correct">correct</span>
+              )}
+              {answered && i === selected && i !== q.a && (
+                <span className="opt-label opt-label--wrong">your answer</span>
+              )}
+            </span>
+            {/* XP float — absolutely positioned so it doesn't affect layout */}
             {answered && i === selected && i === q.a && xpFloat && (
               <span className="xp-float">+{XP_PER_CORRECT} xp</span>
             )}
@@ -138,23 +143,21 @@ export default function QuizScreen({
         ))}
       </div>
 
-      {/* Feedback */}
+      {/* Feedback — always rendered, visibility toggled to prevent layout shift */}
       <div className="feedback-area">
-        {answered ? (
-          <div className={`feedback feedback--${selected === q.a ? 'correct' : 'wrong'} slide-in`}>
-            <strong>{selected === q.a ? 'Correct!' : 'Not quite.'}</strong>
-            {' '}{q.exp}
-          </div>
-        ) : (
-          <div className="feedback-placeholder"/>
-        )}
+        <div
+          className={`feedback feedback--${selected === q.a ? 'correct' : 'wrong'}${answered ? ' slide-in feedback--visible' : ' feedback--hidden'}`}
+        >
+          <strong>{selected === q.a ? 'Correct!' : 'Not quite.'}</strong>
+          {' '}{q.exp}
+        </div>
       </div>
 
-      {/* Next */}
+      {/* Next — always in DOM, fades in */}
       <button
         className="btn-primary"
         onClick={handleNext}
-        style={{opacity: answered ? 1 : 0, pointerEvents: answered ? 'auto' : 'none', transition: 'opacity 0.2s'}}
+        style={{opacity: answered ? 1 : 0, pointerEvents: answered ? 'auto' : 'none', transition: 'opacity 0.25s'}}
       >
         {isLast
           ? (isDaily ? 'Next subject →' : 'See results →')
