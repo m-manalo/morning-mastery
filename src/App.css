@@ -34,7 +34,10 @@ body {
   padding: 2rem 1rem;
 }
 
-.app-container { width: 100%; max-width: 460px; }
+.app-container {
+  width: 460px;
+  max-width: calc(100vw - 2rem);
+}
 
 .card-fixed {
   background: var(--bg);
