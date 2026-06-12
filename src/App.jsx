@@ -1,21 +1,22 @@
 import { useState } from 'react';
-import { QUESTIONS, SUBJECT_CONFIG, PRACTICE_QS, MAX_FIFTY_FIFTY } from './data/questions';
+import { SUBJECT_CONFIG, PRACTICE_QS, MAX_FIFTY_FIFTY } from './data/questions';
 import { useStorage } from './hooks/useStorage';
 import { useTheme } from './hooks/useTheme';
 import {
-  shuffleArray, updateStreak, getInitialSubjectState,
+  updateStreak, getInitialSubjectState, getQuestionPool,
   getLevelFromXP, getTodayKey, isDailyComplete, getShuffledDailyOrder
 } from './utils/gameUtils';
+import OnboardingScreen from './components/OnboardingScreen';
 import HomeScreen from './components/HomeScreen';
 import QuizScreen from './components/QuizScreen';
 import DailyCompleteScreen from './components/DailyCompleteScreen';
 import PracticeResultsScreen from './components/PracticeResultsScreen';
 import './App.css';
 
-const SCREENS = { HOME:'home', QUIZ:'quiz', DAILY_COMPLETE:'daily_complete', PRACTICE_RESULTS:'practice_results' };
+const SCREENS = { ONBOARDING:'onboarding', HOME:'home', QUIZ:'quiz', DAILY_COMPLETE:'daily_complete', PRACTICE_RESULTS:'practice_results' };
 
 const DEFAULT_SUBJECTS = Object.fromEntries(
-  Object.keys(SUBJECT_CONFIG).map(k => [k, getInitialSubjectState()])
+  Object.keys(SUBJECT_CONFIG).map(k => [k, getInitialSubjectState(1)])
 );
 
 export default function App() {
@@ -24,8 +25,9 @@ export default function App() {
   const [streak, setStreak]         = useStorage('mm_streak_v2', { count: 0, lastPlayed: null, playedDates: [] });
   const [dailyState, setDailyState] = useStorage('mm_daily_v2', { completedDate: null, results: {} });
   const [fiftyFifty, setFiftyFifty] = useStorage('mm_5050_v2', { uses: MAX_FIFTY_FIFTY, lastReset: null });
+  const [onboarded, setOnboarded]   = useStorage('mm_onboarded_v1', false);
 
-  const [screen, setScreen]                     = useState(SCREENS.HOME);
+  const [screen, setScreen]                     = useState(onboarded ? SCREENS.HOME : SCREENS.ONBOARDING);
   const [currentSubject, setCurrentSubject]     = useState(null);
   const [sessionQuestions, setSessionQuestions] = useState([]);
   const [isDaily, setIsDaily]                   = useState(false);
@@ -58,6 +60,16 @@ export default function App() {
     setPrevLevels(levels);
   }
 
+  function handleOnboardingComplete(startingLevels) {
+    const newSubjects = {};
+    Object.keys(SUBJECT_CONFIG).forEach(key => {
+      newSubjects[key] = getInitialSubjectState(startingLevels[key] || 1);
+    });
+    setSubjects(newSubjects);
+    setOnboarded(true);
+    setScreen(SCREENS.HOME);
+  }
+
   function startDaily() {
     if (isDailyComplete(dailyState)) return;
     capturePrevLevels();
@@ -66,8 +78,10 @@ export default function App() {
     setDailyQueueIndex(0);
     setDailyResults({});
     setIsDaily(true);
-    const pool = shuffleArray(QUESTIONS[order[0]]).slice(0, 1);
-    setCurrentSubject(order[0]);
+    const firstSub = order[0];
+    const level = getLevelFromXP(subjects[firstSub]?.xp || 0);
+    const pool = getQuestionPool(firstSub, level, 1);
+    setCurrentSubject(firstSub);
     setSessionQuestions(pool);
     setScreen(SCREENS.QUIZ);
   }
@@ -75,7 +89,8 @@ export default function App() {
   function startPractice(sub) {
     capturePrevLevels();
     setIsDaily(false);
-    const pool = shuffleArray(QUESTIONS[sub]).slice(0, PRACTICE_QS);
+    const level = getLevelFromXP(subjects[sub]?.xp || 0);
+    const pool = getQuestionPool(sub, level, PRACTICE_QS);
     setCurrentSubject(sub);
     setSessionQuestions(pool);
     setScreen(SCREENS.QUIZ);
@@ -96,7 +111,8 @@ export default function App() {
       if (nextIndex < dailyQueue.length) {
         setDailyQueueIndex(nextIndex);
         const nextSub = dailyQueue[nextIndex];
-        const pool = shuffleArray(QUESTIONS[nextSub]).slice(0, 1);
+        const level = getLevelFromXP(subjects[nextSub]?.xp || 0);
+        const pool = getQuestionPool(nextSub, level, 1);
         setCurrentSubject(nextSub);
         setSessionQuestions(pool);
       } else {
@@ -125,6 +141,9 @@ export default function App() {
   return (
     <div className="app-container">
       <div className="card-fixed">
+        {screen === SCREENS.ONBOARDING && (
+          <OnboardingScreen onComplete={handleOnboardingComplete} />
+        )}
         {screen === SCREENS.HOME && (
           <HomeScreen
             subjects={subjects}

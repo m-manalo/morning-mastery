@@ -1,4 +1,4 @@
-import { XP_PER_LEVEL, DAILY_SUBJECT_ORDER } from '../data/questions';
+import { XP_PER_LEVEL, DAILY_SUBJECT_ORDER, QUESTIONS, getTierFromLevel } from '../data/questions';
 
 export function getLevelFromXP(xp) {
   return Math.floor(xp / XP_PER_LEVEL) + 1;
@@ -29,8 +29,17 @@ export function updateStreak(streakData) {
   return { count: newCount, lastPlayed: today };
 }
 
-export function getInitialSubjectState() {
-  return { xp: 0 };
+export function getInitialSubjectState(startingLevel = 1) {
+  // Convert a starting level into the XP needed to be at that level
+  const xp = (startingLevel - 1) * XP_PER_LEVEL;
+  return { xp };
+}
+
+// Returns a shuffled pool of questions from the tier matching the subject's current level
+export function getQuestionPool(subject, level, count) {
+  const tier = getTierFromLevel(level);
+  const pool = QUESTIONS[subject]?.[tier] || QUESTIONS[subject]?.[1] || [];
+  return shuffleArray(pool).slice(0, count);
 }
 
 export function getTodayKey() {
