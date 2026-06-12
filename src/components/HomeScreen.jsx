@@ -5,7 +5,7 @@ import { getLevelFromXP, getXPPercent, isDailyComplete } from '../utils/gameUtil
 import { getDailyQuote } from '../data/quotes';
 import ThemePicker from './ThemePicker';
 
-export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onStartPractice }) {
+export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onStartPractice, practicedToday = [] }) {
   const [showTheme, setShowTheme] = useState(false);
   const complete = isDailyComplete(dailyState);
   const now = new Date();
@@ -94,15 +94,27 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
         const level = getLevelFromXP(xp);
         const pct = getXPPercent(xp);
         const sc = SUBJECT_COLORS[key];
+        const done = practicedToday.includes(key);
         return (
-          <button key={key} className="subject-btn" onClick={() => onStartPractice(key)}>
+          <button
+            key={key}
+            className={`subject-btn${done ? ' subject-btn--done' : ''}`}
+            onClick={() => !done && onStartPractice(key)}
+            disabled={done}
+          >
             <div className="sub-tile" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
               {cfg.label.slice(0, 2)}
             </div>
             <div className="sub-info">
               <div className="sub-row-top">
                 <span className="sub-name">{cfg.label}</span>
-                <span className="lv-badge" style={{ background: sc.bg, color: sc.color }}>Lv {level}</span>
+                {done ? (
+                  <span className="lv-badge" style={{ background: 'var(--border)', color: 'var(--text2)' }}>
+                    ✓ done today
+                  </span>
+                ) : (
+                  <span className="lv-badge" style={{ background: sc.bg, color: sc.color }}>Lv {level}</span>
+                )}
               </div>
               <div className="bar-track">
                 <div className="bar-fill" style={{ width: `${pct}%`, background: sc.bar }} />

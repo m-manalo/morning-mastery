@@ -184,6 +184,8 @@ body {
 }
 .subject-btn:hover { border-color: var(--accent); transform: translateX(2px); }
 .subject-btn:active { transform: scale(0.99); }
+.subject-btn--done { opacity: 0.55; cursor: default; }
+.subject-btn--done:hover { border-color: var(--border); transform: none; }
 
 .sub-tile {
   width: 32px; height: 32px;

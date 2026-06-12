@@ -25,6 +25,7 @@ export default function App() {
   const [streak, setStreak]         = useStorage('mm_streak_v2', { count: 0, lastPlayed: null, playedDates: [] });
   const [dailyState, setDailyState] = useStorage('mm_daily_v2', { completedDate: null, results: {} });
   const [fiftyFifty, setFiftyFifty] = useStorage('mm_5050_v2', { uses: MAX_FIFTY_FIFTY, lastReset: null });
+  const [practiceUsed, setPracticeUsed] = useStorage('mm_practice_v1', { date: null, subjects: [] });
   const [onboarded, setOnboarded]   = useStorage('mm_onboarded_v1', false);
 
   const [screen, setScreen]                     = useState(onboarded ? SCREENS.HOME : SCREENS.ONBOARDING);
@@ -52,6 +53,20 @@ export default function App() {
       uses: Math.max(0, (prev.lastReset === today ? prev.uses : MAX_FIFTY_FIFTY) - 1),
       lastReset: today
     }));
+  }
+
+  function getPracticedSubjectsToday() {
+    const today = getTodayKey();
+    if (practiceUsed.date !== today) return [];
+    return practiceUsed.subjects || [];
+  }
+
+  function markSubjectPracticed(sub) {
+    const today = getTodayKey();
+    setPracticeUsed(prev => {
+      const subjects = prev.date === today ? (prev.subjects || []) : [];
+      return { date: today, subjects: [...new Set([...subjects, sub])] };
+    });
   }
 
   function capturePrevLevels() {
@@ -87,6 +102,7 @@ export default function App() {
   }
 
   function startPractice(sub) {
+    if (getPracticedSubjectsToday().includes(sub)) return;
     capturePrevLevels();
     setIsDaily(false);
     const level = getLevelFromXP(subjects[sub]?.xp || 0);
@@ -127,6 +143,7 @@ export default function App() {
         setScreen(SCREENS.DAILY_COMPLETE);
       }
     } else {
+      markSubjectPracticed(subject);
       setPracticeResult({ score, xpEarned, subject });
       setScreen(SCREENS.PRACTICE_RESULTS);
     }
@@ -153,6 +170,7 @@ export default function App() {
             onSetTheme={setThemeKey}
             onStartDaily={startDaily}
             onStartPractice={startPractice}
+            practicedToday={getPracticedSubjectsToday()}
           />
         )}
         {screen === SCREENS.QUIZ && (
@@ -185,7 +203,6 @@ export default function App() {
             subjects={subjects}
             prevLevels={prevLevels}
             onHome={goHome}
-            onRetry={() => startPractice(currentSubject)}
           />
         )}
       </div>

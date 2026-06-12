@@ -63,8 +63,10 @@ export default function PracticeResultsScreen({ result, subjects, prevLevels, on
         {XP_PER_LEVEL - xpIn} xp until Level {newLevel + 1}
       </p>
 
-      <button className="btn-primary" onClick={onRetry}>Play again</button>
-      <button className="btn-secondary" onClick={onHome}>Back to home</button>
+      <p className="t-secondary small center" style={{ marginBottom: '0.75rem' }}>
+        That's your practice for {cfg.label} today — come back tomorrow for another round.
+      </p>
+      <button className="btn-primary" onClick={onHome}>Back to home</button>
     </div>
   );
 }
