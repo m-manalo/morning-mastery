@@ -35,11 +35,42 @@ export function getInitialSubjectState(startingLevel = 1) {
   return { xp };
 }
 
-// Returns a shuffled pool of questions from the tier matching the subject's current level
+// Returns questions from the tier matching the subject's current level,
+// avoiding recently-seen questions (per subject+tier) until that tier's
+// pool is exhausted, then resetting — same pattern as the daily quote rotation.
 export function getQuestionPool(subject, level, count) {
   const tier = getTierFromLevel(level);
   const pool = QUESTIONS[subject]?.[tier] || QUESTIONS[subject]?.[1] || [];
-  return shuffleArray(pool).slice(0, count);
+  if (pool.length === 0) return [];
+
+  const storageKey = `mm_seen_q_${subject}_t${tier}`;
+
+  try {
+    const seen = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    let available = pool.map((_, i) => i).filter(i => !seen.includes(i));
+
+    // If not enough unseen questions remain, reset the seen list for this tier
+    if (available.length < count) {
+      available = pool.map((_, i) => i);
+      localStorage.setItem(storageKey, '[]');
+    }
+
+    const shuffledAvailable = shuffleArray(available);
+    const chosenIndices = shuffledAvailable.slice(0, count);
+
+    const currentSeen = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const newSeen = [...new Set([...currentSeen, ...chosenIndices])];
+    // If we've now seen everything, reset for next time
+    if (newSeen.length >= pool.length) {
+      localStorage.setItem(storageKey, '[]');
+    } else {
+      localStorage.setItem(storageKey, JSON.stringify(newSeen));
+    }
+
+    return chosenIndices.map(i => pool[i]);
+  } catch {
+    return shuffleArray(pool).slice(0, count);
+  }
 }
 
 export function getTodayKey() {

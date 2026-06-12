@@ -117,8 +117,9 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
 
       {/* Dev reset */}
       <button className="dev-reset" onClick={() => {
-        ['mm_subjects_v2','mm_streak_v2','mm_daily_v2','mm_5050_v2','mm_seen_quotes','mm_daily_quote','mm_onboarded_v1','mm_theme']
-          .forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('mm_')) localStorage.removeItem(k);
+        });
         window.location.reload();
       }}>dev reset</button>
     </div>
