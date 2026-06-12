@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { SUBJECT_CONFIG, XP_PER_CORRECT, MAX_FIFTY_FIFTY } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
+import SubjectIllustration from './SubjectIllustration';
 
 export default function QuizScreen({
   subject, questions, totalSubjects, currentSubjectIndex,
@@ -90,16 +91,8 @@ export default function QuizScreen({
 
   return (
     <div className="screen-inner" ref={cardRef}>
-      <div className="quiz-header">
+      <div className="quiz-top-row">
         <button className="back-btn" onClick={onHome}>← Back</button>
-        <div className="quiz-badge-wrap">
-          <div className="sub-tile sub-tile--sm" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
-            {cfg.label.slice(0, 2)}
-          </div>
-          <span className="quiz-subject-label">
-            {cfg.label}{isDaily ? ` · ${currentSubjectIndex + 1}/${totalSubjects}` : ''}
-          </span>
-        </div>
         <button
           className={`fifty-btn${(fiftyFiftyUses <= 0 || answered || eliminated.length > 0) ? ' fifty-btn--off' : ''}`}
           onClick={handleFiftyFifty}
@@ -111,11 +104,16 @@ export default function QuizScreen({
       <div className="prog-track">
         <div className="prog-fill" style={{ width: `${overallPct}%` }} />
       </div>
-      {!isDaily && (
-        <p className="t-secondary small" style={{ marginBottom: '0.5rem' }}>
-          Question {current + 1} of {total}
+
+      <div className="subject-banner">
+        <div className="subject-illu-wrap" style={{ background: sc.bg, borderColor: sc.border }}>
+          <SubjectIllustration subject={subject} color={sc.color} />
+        </div>
+        <p className="subject-banner-name">{cfg.label}</p>
+        <p className="subject-banner-count">
+          {isDaily ? `Subject ${currentSubjectIndex + 1} of ${totalSubjects}` : `Question ${current + 1} of ${total}`}
         </p>
-      )}
+      </div>
 
       <p className={`question ${qAnim}`}>{q.q}</p>
 
