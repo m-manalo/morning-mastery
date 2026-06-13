@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { SUBJECT_CONFIG } from '../data/questions';
+import { SUBJECT_CONFIG, DAILY_SUBJECT_ORDER } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, isDailyComplete } from '../utils/gameUtils';
-import { getDailyQuote } from '../data/quotes';
 import ThemePicker from './ThemePicker';
 
-export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onStartPractice, practicedToday = [] }) {
+export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview }) {
   const [showTheme, setShowTheme] = useState(false);
   const complete = isDailyComplete(dailyState);
   const now = new Date();
@@ -57,8 +56,8 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
             <p className="t-secondary small" style={{ marginTop: 4 }}>Come back tomorrow to keep your streak</p>
             <div className="daily-subjects-dots">
               {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
-                const got = dailyState?.results?.[key];
-                const sc = SUBJECT_COLORS[key];
+                const result = dailyState?.results?.[key];
+                const got = result?.correct;
                 return (
                   <div key={key} className="daily-dot" title={cfg.label} style={{
                     background: got === true ? '#4A9E47' : got === false ? '#E05A3A' : 'rgba(0,0,0,0.1)',
@@ -87,40 +86,60 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
         )}
       </div>
 
-      {/* Practice */}
-      <p className="section-label">practise a subject</p>
+      {/* Today's questions — only once the daily is complete */}
+      {complete && (
+        <>
+          <p className="section-label">today's questions</p>
+          {DAILY_SUBJECT_ORDER.filter(key => dailyState?.results?.[key]).map(key => {
+            const cfg = SUBJECT_CONFIG[key];
+            const sc = SUBJECT_COLORS[key];
+            const result = dailyState.results[key];
+            return (
+              <button
+                key={key}
+                className={`review-btn${result.correct ? '' : ' review-btn--wrong'}`}
+                onClick={() => onOpenReview(key)}
+              >
+                <div className="sub-tile" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+                  {cfg.label.slice(0, 2)}
+                </div>
+                <div className="sub-info">
+                  <span className="sub-name">{cfg.label}</span>
+                  <p className="review-question-preview">{result.question.q}</p>
+                </div>
+                <span className={`result-tick ${result.correct ? 'correct' : 'wrong'}`}>
+                  {result.correct ? '✓' : '✗'}
+                </span>
+                <span className="review-arrow">→</span>
+              </button>
+            );
+          })}
+          <div className="divider" />
+        </>
+      )}
+
+      {/* Progress overview */}
+      <p className="section-label">your progress</p>
       {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
         const xp = subjects[key]?.xp || 0;
         const level = getLevelFromXP(xp);
         const pct = getXPPercent(xp);
         const sc = SUBJECT_COLORS[key];
-        const done = practicedToday.includes(key);
         return (
-          <button
-            key={key}
-            className={`subject-btn${done ? ' subject-btn--done' : ''}`}
-            onClick={() => !done && onStartPractice(key)}
-            disabled={done}
-          >
+          <div key={key} className="progress-row">
             <div className="sub-tile" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
               {cfg.label.slice(0, 2)}
             </div>
             <div className="sub-info">
               <div className="sub-row-top">
                 <span className="sub-name">{cfg.label}</span>
-                {done ? (
-                  <span className="lv-badge" style={{ background: 'var(--border)', color: 'var(--text2)' }}>
-                    ✓ done today
-                  </span>
-                ) : (
-                  <span className="lv-badge" style={{ background: sc.bg, color: sc.color }}>Lv {level}</span>
-                )}
+                <span className="lv-badge" style={{ background: sc.bg, color: sc.color }}>Lv {level}</span>
               </div>
               <div className="bar-track">
                 <div className="bar-fill" style={{ width: `${pct}%`, background: sc.bar }} />
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
 

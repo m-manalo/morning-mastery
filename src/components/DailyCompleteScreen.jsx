@@ -4,13 +4,13 @@ import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak } from '../utils/gameUtils';
 import { getDailyQuote } from '../data/quotes';
 
-export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, onHome, onPractice }) {
+export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, onHome, onReview }) {
   const [savedQuote, setSavedQuote] = useState(false);
   const quote = getDailyQuote();
   const weekDays = getWeekStreak(streak);
-  const totalCorrect = Object.values(results).filter(Boolean).length;
+  const totalCorrect = Object.values(results).filter(r => r?.correct).length;
   const totalSubjects = Object.keys(SUBJECT_CONFIG).length;
-  const wrongSubjects = Object.entries(results).filter(([, v]) => v === false).map(([k]) => k);
+  const wrongSubjects = Object.entries(results).filter(([, v]) => v && v.correct === false).map(([k]) => k);
   const levelUps = Object.keys(SUBJECT_CONFIG).filter(k => {
     return getLevelFromXP(subjects[k]?.xp || 0) > (prevLevels[k] || 1);
   });
@@ -54,7 +54,7 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
         const lv = getLevelFromXP(xp);
         const pct = getXPPercent(xp);
         const sc = SUBJECT_COLORS[key];
-        const correct = results[key];
+        const correct = results[key]?.correct;
         return (
           <div key={key} className="rc-row">
             <div className="rc-tile" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
@@ -78,10 +78,10 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
           <span style={{ fontSize: 15 }}>💡</span>
           <div>
             <p style={{ fontSize: 13, color: 'var(--text)', margin: 0 }}>
-              Struggled with {wrongSubjects.map(k => SUBJECT_CONFIG[k].label).join(' & ')}?
+              Missed {wrongSubjects.map(k => SUBJECT_CONFIG[k].label).join(' & ')}?
             </p>
-            <button className="nudge-link" onClick={() => onPractice(wrongSubjects[0])}>
-              Practise {SUBJECT_CONFIG[wrongSubjects[0]].label} now →
+            <button className="nudge-link" onClick={() => onReview(wrongSubjects[0])}>
+              Read why →
             </button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { SUBJECT_CONFIG, XP_PER_CORRECT, MAX_FIFTY_FIFTY } from '../data/questions';
+import { SUBJECT_CONFIG, XP_PER_CORRECT } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import SubjectIllustration from './SubjectIllustration';
 
@@ -74,7 +74,9 @@ export default function QuizScreen({
         score:   scoreRef.current,
         xpEarned: xpRef.current,
         subject,
-        correct: selectedRef.current === q.a
+        correct: selectedRef.current === q.a,
+        question: q,
+        selectedIdx: selectedRef.current
       });
     } else {
       setCurrent(c => c + 1);
