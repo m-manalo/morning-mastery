@@ -4,6 +4,11 @@ import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, isDailyComplete } from '../utils/gameUtils';
 import ThemePicker from './ThemePicker';
 
+// Shorter display names for the compact ring layout
+const SHORT_LABEL = {
+  socialstudies: 'Social',
+};
+
 export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview }) {
   const [showTheme, setShowTheme] = useState(false);
   const complete = isDailyComplete(dailyState);
@@ -40,51 +45,51 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
 
       {/* Daily card */}
       <div
-        className={`daily-hero${complete ? ' daily-hero--done' : ''}`}
+        className={`daily-light${complete ? ' daily-light--done' : ''}`}
         onClick={complete ? undefined : onStartDaily}
         role={complete ? undefined : 'button'}
         tabIndex={complete ? undefined : 0}
         onKeyDown={e => !complete && e.key === 'Enter' && onStartDaily()}
       >
-        {complete ? (
-          <>
-            <div className="daily-top">
-              <span className="daily-badge daily-badge--done">Completed today</span>
-              <span style={{ fontSize: 18 }}>✓</span>
-            </div>
-            <p className="daily-title" style={{ opacity: 0.6 }}>Daily complete</p>
-            <p className="t-secondary small" style={{ marginTop: 4 }}>Come back tomorrow to keep your streak</p>
-            <div className="daily-subjects-dots">
-              {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
-                const result = dailyState?.results?.[key];
-                const got = result?.correct;
-                return (
-                  <div key={key} className="daily-dot" title={cfg.label} style={{
-                    background: got === true ? '#4A9E47' : got === false ? '#E05A3A' : 'rgba(0,0,0,0.1)',
-                    fontSize: 13,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <span style={{ fontSize: 14 }}>{got === true ? '✓' : got === false ? '✗' : '·'}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="daily-top">
-              <span className="daily-badge">READY</span>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>5 subjects · ~3 min</span>
-            </div>
-            <p className="daily-title">Start today's daily</p>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>One question per subject, auto-flow</p>
-            <div className="daily-cta">
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Tap to begin</span>
-              <div className="daily-arrow">→</div>
-            </div>
-          </>
-        )}
+        <div className="daily-icon-circle">
+          <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="30" r="14" fill="currentColor"/>
+            <rect x="8" y="46" width="48" height="8" rx="4" fill="currentColor"/>
+            <g stroke="currentColor" strokeWidth="4" strokeLinecap="round">
+              <line x1="32" y1="6" x2="32" y2="14"/>
+              <line x1="12" y1="14" x2="18" y2="20"/>
+              <line x1="52" y1="14" x2="46" y2="20"/>
+            </g>
+          </svg>
+        </div>
+        <div className="daily-light-info">
+          <p className="daily-light-title">
+            {complete ? 'Daily complete' : "Start today's daily"}
+          </p>
+          <p className="daily-light-sub">
+            {complete ? 'Come back tomorrow to keep your streak' : '5 subjects · ~3 min'}
+          </p>
+        </div>
+        <div className={`daily-arrow-light${complete ? ' daily-arrow-light--done' : ''}`}>
+          {complete ? '✓' : '→'}
+        </div>
       </div>
+
+      {complete && (
+        <div className="daily-subjects-dots daily-subjects-dots--compact">
+          {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
+            const result = dailyState?.results?.[key];
+            const got = result?.correct;
+            return (
+              <div key={key} className="daily-dot" title={cfg.label} style={{
+                background: got === true ? '#4A9E47' : got === false ? '#E05A3A' : 'rgba(0,0,0,0.1)',
+              }}>
+                <span>{got === true ? '✓' : got === false ? '✗' : '·'}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Today's questions — only once the daily is complete */}
       {complete && (
@@ -120,28 +125,37 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
 
       {/* Progress overview */}
       <p className="section-label">your progress</p>
-      {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
-        const xp = subjects[key]?.xp || 0;
-        const level = getLevelFromXP(xp);
-        const pct = getXPPercent(xp);
-        const sc = SUBJECT_COLORS[key];
-        return (
-          <div key={key} className="progress-row">
-            <div className="sub-tile" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
-              {cfg.label.slice(0, 2)}
-            </div>
-            <div className="sub-info">
-              <div className="sub-row-top">
-                <span className="sub-name">{cfg.label}</span>
-                <span className="lv-badge" style={{ background: sc.bg, color: sc.color }}>Lv {level}</span>
+      <div className="rings-row">
+        {Object.entries(SUBJECT_CONFIG).map(([key, cfg]) => {
+          const xp = subjects[key]?.xp || 0;
+          const level = getLevelFromXP(xp);
+          const pct = getXPPercent(xp);
+          const sc = SUBJECT_COLORS[key];
+          const circumference = 2 * Math.PI * 19; // r=19
+          const dashoffset = circumference * (1 - pct / 100);
+          return (
+            <div key={key} className="ring-item">
+              <div className="ring">
+                <svg width="46" height="46" viewBox="0 0 46 46">
+                  <circle cx="23" cy="23" r="19" fill="none" stroke="var(--bar-bg)" strokeWidth="4" />
+                  <circle
+                    cx="23" cy="23" r="19" fill="none"
+                    stroke={sc.bar} strokeWidth="4" strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={dashoffset}
+                    transform="rotate(-90 23 23)"
+                  />
+                </svg>
+                <div className="ring-center" style={{ color: sc.color }}>
+                  {cfg.label.slice(0, 2)}
+                </div>
               </div>
-              <div className="bar-track">
-                <div className="bar-fill" style={{ width: `${pct}%`, background: sc.bar }} />
-              </div>
+              <p className="ring-name">{SHORT_LABEL[key] || cfg.label}</p>
+              <p className="ring-lv">Lv {level}</p>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       <div className="divider" />
       <p className="t-secondary small center">progress saves in your browser</p>
