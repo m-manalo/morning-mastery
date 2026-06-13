@@ -1,0 +1,25 @@
+{
+  "short_name": "Morning Mastery",
+  "name": "Morning Mastery — Daily Knowledge Workout",
+  "description": "A short daily ritual to wake your brain up and learn something new — every morning, in under 3 minutes.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FF6B47",
+  "background_color": "#FFF6F3"
+}
