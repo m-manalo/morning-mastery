@@ -11,6 +11,7 @@ import HomeScreen from './components/HomeScreen';
 import QuizScreen from './components/QuizScreen';
 import DailyCompleteScreen from './components/DailyCompleteScreen';
 import ReviewScreen from './components/ReviewScreen';
+import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
 const SCREENS = { ONBOARDING:'onboarding', HOME:'home', QUIZ:'quiz', DAILY_COMPLETE:'daily_complete', REVIEW:'review' };
@@ -179,6 +180,7 @@ export default function App() {
           />
         )}
       </div>
+      <Analytics />
     </div>
   );
 }
