@@ -506,7 +506,7 @@ body {
 
 /* ── Dev reset ── */
 .dev-reset {
-  margin-top: auto; padding-top: 1rem;
+  margin-top: 1rem; padding-top: 0.5rem;
   background: none; border: none;
   font-size: 11px; color: var(--text2);
   cursor: pointer; opacity: 0.35;
@@ -571,12 +571,14 @@ body {
 
 /* ── Mobile / installed PWA: full-screen, edge-to-edge ── */
 @media (max-width: 520px) {
-  html, body { height: 100%; overflow: hidden; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
 
   body {
     padding: 0;
-    align-items: stretch;
-    justify-content: stretch;
+    display: block;
   }
 
   .app-container {
@@ -587,18 +589,25 @@ body {
 
   .card-fixed {
     height: 100%;
-    /* Use dynamic viewport height where supported, falling back to 100% of the html/body chain above */
     height: 100dvh;
     border-radius: 0;
     border: none;
   }
 
   .screen-inner {
+    height: 100%;
     padding: 1.25rem 1rem;
-    /* Respect notch / status bar / home indicator on iOS standalone PWAs */
     padding-top: calc(1.25rem + env(safe-area-inset-top));
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
     padding-left: calc(1rem + env(safe-area-inset-left));
     padding-right: calc(1rem + env(safe-area-inset-right));
+    /* Don't stretch content — let it sit naturally at the top */
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  /* On mobile the dev-reset shouldn't push to bottom with auto margin */
+  .dev-reset {
+    margin-top: 1.5rem;
   }
 }
