@@ -185,6 +185,7 @@ export default function App() {
             subjects={subjects}
             streak={streak}
             prevLevels={prevLevels}
+            stats={stats}
             onHome={goHome}
             onReview={openReview}
           />

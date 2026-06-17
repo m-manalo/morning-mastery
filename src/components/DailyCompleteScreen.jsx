@@ -3,20 +3,21 @@ import { SUBJECT_CONFIG, XP_PER_LEVEL } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak, getStreakMilestone } from '../utils/gameUtils';
 import { getDailyQuote } from '../data/quotes';
+import { getPerspectiveLine } from '../data/perspectives';
 import { shareResult } from './ShareResult';
 
 function milestoneCopy(n) {
-  if (n >= 365) return "A full year. Incredible.";
-  if (n >= 200) return "That's serious dedication.";
-  if (n >= 100) return "Triple digits!";
-  if (n >= 50) return "Half a century of mornings.";
-  if (n >= 30) return "A whole month strong.";
-  if (n >= 14) return "Two weeks in a row.";
-  if (n >= 7) return "One week strong!";
-  return "Off to a great start.";
+  if (n >= 365) return "A Full Year 🎉";
+  if (n >= 200) return "Serious Dedication";
+  if (n >= 100) return "Triple Digits!";
+  if (n >= 50) return "Half a Century";
+  if (n >= 30) return "A Month Strong";
+  if (n >= 14) return "Two Weeks In";
+  if (n >= 7) return "One Week Strong";
+  return "Off to a Great Start";
 }
 
-export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, onHome, onReview }) {
+export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, stats, onHome, onReview }) {
   const [savedQuote, setSavedQuote] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const quote = getDailyQuote();
@@ -51,8 +52,13 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
       </div>
 
       {milestone && (
-        <div className="milestone-banner">
-          🔥 <strong>{milestone} day streak!</strong> {milestoneCopy(milestone)}
+        <div className="milestone-card">
+          <div className="milestone-badge">
+            <span className="milestone-badge-num">{milestone}</span>
+            <span className="milestone-badge-lbl">DAYS</span>
+          </div>
+          <p className="milestone-title">{milestoneCopy(milestone)}</p>
+          <p className="milestone-perspective">{getPerspectiveLine(stats, milestone)}</p>
         </div>
       )}
 
