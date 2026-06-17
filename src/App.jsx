@@ -4,17 +4,19 @@ import { useStorage } from './hooks/useStorage';
 import { useTheme } from './hooks/useTheme';
 import {
   updateStreak, getInitialSubjectState, getQuestionPool,
-  getLevelFromXP, getTodayKey, isDailyComplete, getShuffledDailyOrder
+  getLevelFromXP, getTodayKey, isDailyComplete, getShuffledDailyOrder,
+  getInitialStats, updateStatsAfterDaily
 } from './utils/gameUtils';
 import OnboardingScreen from './components/OnboardingScreen';
 import HomeScreen from './components/HomeScreen';
 import QuizScreen from './components/QuizScreen';
 import DailyCompleteScreen from './components/DailyCompleteScreen';
 import ReviewScreen from './components/ReviewScreen';
+import SettingsScreen from './components/SettingsScreen';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
-const SCREENS = { ONBOARDING:'onboarding', HOME:'home', QUIZ:'quiz', DAILY_COMPLETE:'daily_complete', REVIEW:'review' };
+const SCREENS = { ONBOARDING:'onboarding', HOME:'home', QUIZ:'quiz', DAILY_COMPLETE:'daily_complete', REVIEW:'review', SETTINGS:'settings' };
 
 const DEFAULT_SUBJECTS = Object.fromEntries(
   Object.keys(SUBJECT_CONFIG).map(k => [k, getInitialSubjectState(1)])
@@ -27,6 +29,7 @@ export default function App() {
   const [dailyState, setDailyState] = useStorage('mm_daily_v2', { completedDate: null, results: {} });
   const [fiftyFifty, setFiftyFifty] = useStorage('mm_5050_v2', { uses: MAX_FIFTY_FIFTY, lastReset: null });
   const [onboarded, setOnboarded]   = useStorage('mm_onboarded_v1', false);
+  const [stats, setStats]           = useStorage('mm_stats_v1', getInitialStats());
 
   const [screen, setScreen]                     = useState(onboarded ? SCREENS.HOME : SCREENS.ONBOARDING);
   const [currentSubject, setCurrentSubject]     = useState(null);
@@ -110,12 +113,15 @@ export default function App() {
     } else {
       const today = getTodayKey();
       setDailyState({ completedDate: today, results: newResults });
+      let newStreakCount = 0;
       setStreak(prev => {
         const updated = updateStreak(prev);
+        newStreakCount = updated.count;
         const playedDates = [...(prev.playedDates || [])];
         if (!playedDates.includes(today)) playedDates.push(today);
         return { ...updated, playedDates };
       });
+      setStats(prev => updateStatsAfterDaily(prev, newResults, newStreakCount));
       setScreen(SCREENS.DAILY_COMPLETE);
     }
   }
@@ -124,6 +130,16 @@ export default function App() {
     const idx = DAILY_SUBJECT_ORDER.findIndex(s => s === subjectKey);
     setReviewIndex(idx >= 0 ? idx : 0);
     setScreen(SCREENS.REVIEW);
+  }
+
+  function openSettings() {
+    setScreen(SCREENS.SETTINGS);
+  }
+
+  function redoCalibration() {
+    // Stats and streak are preserved — only subject levels reset via onboarding
+    setOnboarded(false);
+    setScreen(SCREENS.ONBOARDING);
   }
 
   function goHome() {
@@ -146,6 +162,7 @@ export default function App() {
             onSetTheme={setThemeKey}
             onStartDaily={startDaily}
             onOpenReview={openReview}
+            onOpenSettings={openSettings}
           />
         )}
         {screen === SCREENS.QUIZ && (
@@ -177,6 +194,15 @@ export default function App() {
             results={dailyState.results}
             startIndex={reviewIndex}
             onHome={goHome}
+          />
+        )}
+        {screen === SCREENS.SETTINGS && (
+          <SettingsScreen
+            subjects={subjects}
+            streak={streak}
+            stats={stats}
+            onHome={goHome}
+            onRedoCalibration={redoCalibration}
           />
         )}
       </div>

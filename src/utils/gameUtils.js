@@ -21,12 +21,51 @@ export function shuffleArray(arr) {
   return a;
 }
 
+// Streak thresholds worth celebrating
+export const STREAK_MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
+
+export function getStreakMilestone(count) {
+  return STREAK_MILESTONES.includes(count) ? count : null;
+}
+
 export function updateStreak(streakData) {
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toDateString();
+
   if (streakData.lastPlayed === today) return streakData;
-  const newCount = streakData.lastPlayed === yesterday ? (streakData.count || 0) + 1 : 1;
-  return { count: newCount, lastPlayed: today };
+
+  // Same month as last grace day use? Used this calendar month already?
+  const now = new Date();
+  const thisMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+  const graceUsedThisMonth = streakData.graceMonth === thisMonthKey;
+
+  if (streakData.lastPlayed === yesterday) {
+    // Played yesterday — normal continuation
+    return {
+      ...streakData,
+      count: (streakData.count || 0) + 1,
+      lastPlayed: today,
+    };
+  }
+
+  if (streakData.lastPlayed === twoDaysAgo && !graceUsedThisMonth && (streakData.count || 0) > 0) {
+    // Missed exactly one day, haven't used this month's grace day — streak survives
+    return {
+      ...streakData,
+      count: (streakData.count || 0) + 1,
+      lastPlayed: today,
+      graceMonth: thisMonthKey,
+      graceUsedOn: today,
+    };
+  }
+
+  // Missed more than one day, or grace already used this month — streak resets
+  return {
+    ...streakData,
+    count: 1,
+    lastPlayed: today,
+  };
 }
 
 export function getInitialSubjectState(startingLevel = 1) {
@@ -100,4 +139,21 @@ export function getWeekStreak(streak) {
     const played = streak?.playedDates?.includes(key) || false;
     return { label, isToday, isFuture, played };
   });
+}
+
+// Lifetime stats — tracked incrementally alongside each daily completion
+export function getInitialStats() {
+  return { totalAnswered: 0, totalCorrect: 0, longestStreak: 0, daysCompleted: 0 };
+}
+
+export function updateStatsAfterDaily(stats, dailyResultsObj, currentStreakCount) {
+  const results = Object.values(dailyResultsObj || {});
+  const correctCount = results.filter(r => r?.correct).length;
+  const prev = stats || getInitialStats();
+  return {
+    totalAnswered: (prev.totalAnswered || 0) + results.length,
+    totalCorrect: (prev.totalCorrect || 0) + correctCount,
+    longestStreak: Math.max(prev.longestStreak || 0, currentStreakCount || 0),
+    daysCompleted: (prev.daysCompleted || 0) + 1,
+  };
 }

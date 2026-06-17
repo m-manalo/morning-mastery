@@ -1,11 +1,24 @@
 import { useState } from 'react';
 import { SUBJECT_CONFIG, XP_PER_LEVEL } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
-import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak } from '../utils/gameUtils';
+import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak, getStreakMilestone } from '../utils/gameUtils';
 import { getDailyQuote } from '../data/quotes';
+import { shareResult } from './ShareResult';
+
+function milestoneCopy(n) {
+  if (n >= 365) return "A full year. Incredible.";
+  if (n >= 200) return "That's serious dedication.";
+  if (n >= 100) return "Triple digits!";
+  if (n >= 50) return "Half a century of mornings.";
+  if (n >= 30) return "A whole month strong.";
+  if (n >= 14) return "Two weeks in a row.";
+  if (n >= 7) return "One week strong!";
+  return "Off to a great start.";
+}
 
 export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, onHome, onReview }) {
   const [savedQuote, setSavedQuote] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const quote = getDailyQuote();
   const weekDays = getWeekStreak(streak);
   const totalCorrect = Object.values(results).filter(r => r?.correct).length;
@@ -14,6 +27,14 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
   const levelUps = Object.keys(SUBJECT_CONFIG).filter(k => {
     return getLevelFromXP(subjects[k]?.xp || 0) > (prevLevels[k] || 1);
   });
+  const milestone = getStreakMilestone(streak.count || 0);
+
+  function handleShare() {
+    shareResult(
+      { streakCount: streak.count || 1, correctCount: totalCorrect, totalCount: totalSubjects },
+      () => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }
+    );
+  }
 
   return (
     <div className="screen-inner">
@@ -28,6 +49,12 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
         </p>
         <p className="t-secondary small">{streak.count || 1} day streak 🔥</p>
       </div>
+
+      {milestone && (
+        <div className="milestone-banner">
+          🔥 <strong>{milestone} day streak!</strong> {milestoneCopy(milestone)}
+        </div>
+      )}
 
       {/* Week calendar */}
       <div className="week-row">
@@ -102,6 +129,10 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
           </button>
         </div>
       </div>
+
+      <button className="btn-secondary" style={{ marginTop: 8 }} onClick={handleShare}>
+        {shareCopied ? 'Copied to clipboard ✓' : 'Share today\'s result'}
+      </button>
 
       <button className="btn-primary" onClick={onHome}>Done for today</button>
     </div>

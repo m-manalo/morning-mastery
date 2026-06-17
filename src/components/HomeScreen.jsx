@@ -9,7 +9,7 @@ const SHORT_LABEL = {
   socialstudies: 'Social',
 };
 
-export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview }) {
+export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview, onOpenSettings }) {
   const [showTheme, setShowTheme] = useState(false);
   const complete = isDailyComplete(dailyState);
   const now = new Date();
@@ -33,13 +33,20 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
           <h1 className="app-title">Morning Mastery</h1>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <div className="streak-box">
-            <p className="streak-num">{streak.count || 0} 🔥</p>
-            <p className="t-secondary small">day streak</p>
+          {streak.count > 0 && (
+            <div className="streak-box">
+              <p className="streak-num">{streak.count} 🔥</p>
+              <p className="t-secondary small">day streak</p>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="theme-toggle-btn" onClick={() => setShowTheme(true)}>
+              🎨 theme
+            </button>
+            <button className="theme-toggle-btn" onClick={onOpenSettings}>
+              ⚙️
+            </button>
           </div>
-          <button className="theme-toggle-btn" onClick={() => setShowTheme(true)}>
-            🎨 theme
-          </button>
         </div>
       </div>
 
@@ -156,9 +163,6 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
           );
         })}
       </div>
-
-      <div className="divider" />
-      <p className="t-secondary small center">progress saves in your browser</p>
 
       {/* Dev reset */}
       <button className="dev-reset" onClick={() => {
