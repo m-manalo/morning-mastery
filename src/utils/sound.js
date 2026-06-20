@@ -9,6 +9,9 @@ const SOUNDS = {
   complete: '/sounds/complete.mp3',
   milestone: '/sounds/milestone.mp3',
   tap: '/sounds/tap.mp3',
+  startDaily: '/sounds/start_daily.mp3',
+  fiftyFifty: '/sounds/fifty_fifty.mp3',
+  levelUp: '/sounds/level_up.mp3',
 };
 
 // Cache Audio objects so repeated plays don't re-fetch the file

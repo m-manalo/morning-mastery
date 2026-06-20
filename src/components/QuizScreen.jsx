@@ -47,6 +47,7 @@ export default function QuizScreen({
     if (fiftyFiftyUses <= 0 || answered || eliminated.length > 0) return;
     const wrong = q.opts.map((_, i) => i).filter(i => i !== q.a);
     setEliminated([...wrong].sort(() => Math.random() - 0.5).slice(0, 2));
+    playSound('fiftyFifty');
     onUseFiftyFifty();
   }
 

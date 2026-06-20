@@ -13,6 +13,7 @@ import QuizScreen from './components/QuizScreen';
 import DailyCompleteScreen from './components/DailyCompleteScreen';
 import ReviewScreen from './components/ReviewScreen';
 import SettingsScreen from './components/SettingsScreen';
+import { playSound } from './utils/sound';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
@@ -90,10 +91,16 @@ export default function App() {
 
   function handleQuizComplete({ score, xpEarned, subject, correct, question, selectedIdx }) {
     if (xpEarned > 0) {
+      const prevLevel = getLevelFromXP(subjects[subject]?.xp || 0);
+      const newXp = (subjects[subject]?.xp || 0) + xpEarned;
+      const newLevel = getLevelFromXP(newXp);
       setSubjects(prev => ({
         ...prev,
-        [subject]: { xp: (prev[subject]?.xp || 0) + xpEarned }
+        [subject]: { xp: newXp }
       }));
+      if (newLevel > prevLevel) {
+        playSound('levelUp');
+      }
     }
 
     const newResults = {

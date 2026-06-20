@@ -3,6 +3,7 @@ import { SUBJECT_CONFIG, DAILY_SUBJECT_ORDER } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, isDailyComplete } from '../utils/gameUtils';
 import ThemePicker from './ThemePicker';
+import { playSound } from '../utils/sound';
 
 // Shorter display names for the compact ring layout
 const SHORT_LABEL = {
@@ -53,10 +54,10 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
       {/* Daily card */}
       <div
         className={`daily-light${complete ? ' daily-light--done' : ''}`}
-        onClick={complete ? undefined : onStartDaily}
+        onClick={complete ? undefined : () => { playSound('startDaily'); onStartDaily(); }}
         role={complete ? undefined : 'button'}
         tabIndex={complete ? undefined : 0}
-        onKeyDown={e => !complete && e.key === 'Enter' && onStartDaily()}
+        onKeyDown={e => { if (!complete && e.key === 'Enter') { playSound('startDaily'); onStartDaily(); } }}
       >
         <div className="daily-icon-circle">
           <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
