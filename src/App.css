@@ -1,5 +1,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  /* Explicitly light — prevents Android Chrome/Samsung Internet's forced
+     dark mode from auto-darkening our intentionally light, warm palette */
+  color-scheme: light only;
+}
+
 :root {
   --accent:       #FF6B47;
   --accent-dark:  #CC4422;
