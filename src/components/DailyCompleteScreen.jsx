@@ -33,7 +33,6 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
 
   useEffect(() => {
     playSound(milestone ? 'milestone' : 'complete');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleShare() {
