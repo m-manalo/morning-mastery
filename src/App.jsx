@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SUBJECT_CONFIG, MAX_FIFTY_FIFTY, DAILY_SUBJECT_ORDER } from './data/questions';
 import { useStorage } from './hooks/useStorage';
 import { useTheme } from './hooks/useTheme';
@@ -40,6 +40,66 @@ export default function App() {
   const [dailyResults, setDailyResults]         = useState({});
   const [prevLevels, setPrevLevels]             = useState({});
   const [reviewIndex, setReviewIndex]           = useState(0);
+  const [confirmLeaveQuiz, setConfirmLeaveQuiz] = useState(false);
+
+  // Tracks whether we're mid-quiz with unanswered progress that would be lost
+  // if the user navigated away. Used to gate the back button with a confirmation
+  // rather than silently discarding their place in the daily.
+  const quizInProgressRef = useRef(false);
+
+  // ── Browser history integration ──
+  // Every screen change pushes a history entry, so the device's native back
+  // button (hardware or gesture, e.g. on Android) navigates within the app
+  // instead of closing/backgrounding it. We intercept popstate and route it
+  // through the same logic as the in-app back button, including the
+  // "are you sure" guard for an in-progress quiz.
+  const isPoppingRef = useRef(false);
+
+  function navigateTo(nextScreen, replace = false) {
+    setScreen(nextScreen);
+    if (replace) {
+      window.history.replaceState({ screen: nextScreen }, '');
+    } else {
+      window.history.pushState({ screen: nextScreen }, '');
+    }
+  }
+
+  useEffect(() => {
+    // Seed the initial history entry so there's always something to land on
+    window.history.replaceState({ screen }, '');
+
+    function handlePopState(e) {
+      if (quizInProgressRef.current) {
+        // Block leaving an in-progress quiz silently — push the quiz state
+        // back onto the stack and ask for confirmation instead.
+        window.history.pushState({ screen: SCREENS.QUIZ }, '');
+        setConfirmLeaveQuiz(true);
+        return;
+      }
+      isPoppingRef.current = true;
+      const target = e.state?.screen || SCREENS.HOME;
+      setScreen(target);
+      if (target === SCREENS.HOME) {
+        setCurrentSubject(null);
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function confirmLeaveQuizYes() {
+    setConfirmLeaveQuiz(false);
+    quizInProgressRef.current = false;
+    setCurrentSubject(null);
+    setScreen(SCREENS.HOME);
+    window.history.replaceState({ screen: SCREENS.HOME }, '');
+  }
+
+  function confirmLeaveQuizNo() {
+    setConfirmLeaveQuiz(false);
+  }
 
   function getFiftyFiftyUses() {
     const today = getTodayKey();
@@ -71,7 +131,7 @@ export default function App() {
     });
     setSubjects(newSubjects);
     setOnboarded(true);
-    setScreen(SCREENS.HOME);
+    navigateTo(SCREENS.HOME, true);
   }
 
   function startDaily() {
@@ -86,7 +146,8 @@ export default function App() {
     const pool = getQuestionPool(firstSub, level, 1);
     setCurrentSubject(firstSub);
     setSessionQuestions(pool);
-    setScreen(SCREENS.QUIZ);
+    quizInProgressRef.current = true;
+    navigateTo(SCREENS.QUIZ);
   }
 
   function handleQuizComplete({ score, xpEarned, subject, correct, question, selectedIdx }) {
@@ -117,6 +178,10 @@ export default function App() {
       const pool = getQuestionPool(nextSub, level, 1);
       setCurrentSubject(nextSub);
       setSessionQuestions(pool);
+      // Still mid-daily — replace the current history entry rather than
+      // stacking one per question, so back from question 3 doesn't land
+      // you on question 2's stale state.
+      window.history.replaceState({ screen: SCREENS.QUIZ }, '');
     } else {
       const today = getTodayKey();
       setDailyState({ completedDate: today, results: newResults });
@@ -129,29 +194,39 @@ export default function App() {
         return { ...updated, playedDates };
       });
       setStats(prev => updateStatsAfterDaily(prev, newResults, newStreakCount));
-      setScreen(SCREENS.DAILY_COMPLETE);
+      quizInProgressRef.current = false;
+      navigateTo(SCREENS.DAILY_COMPLETE, true);
     }
   }
 
   function openReview(subjectKey) {
     const idx = DAILY_SUBJECT_ORDER.findIndex(s => s === subjectKey);
     setReviewIndex(idx >= 0 ? idx : 0);
-    setScreen(SCREENS.REVIEW);
+    navigateTo(SCREENS.REVIEW);
   }
 
   function openSettings() {
-    setScreen(SCREENS.SETTINGS);
+    navigateTo(SCREENS.SETTINGS);
   }
 
   function redoCalibration() {
     // Stats and streak are preserved — only subject levels reset via onboarding
     setOnboarded(false);
-    setScreen(SCREENS.ONBOARDING);
+    navigateTo(SCREENS.ONBOARDING);
   }
 
   function goHome() {
-    setScreen(SCREENS.HOME);
+    quizInProgressRef.current = false;
     setCurrentSubject(null);
+    if (isPoppingRef.current) {
+      // Reached here via the popstate handler (native back) — state is
+      // already being set there, just reset the flag.
+      isPoppingRef.current = false;
+      return;
+    }
+    // Reached here via an in-app button — go back in history so the stack
+    // doesn't grow unbounded, and let the popstate handler update the screen.
+    window.history.back();
   }
 
   return (
@@ -183,7 +258,7 @@ export default function App() {
             fiftyFiftyUses={getFiftyFiftyUses()}
             onUseFiftyFifty={useFiftyFifty}
             onComplete={handleQuizComplete}
-            onHome={goHome}
+            onHome={() => setConfirmLeaveQuiz(true)}
           />
         )}
         {screen === SCREENS.DAILY_COMPLETE && (
@@ -212,6 +287,25 @@ export default function App() {
             onHome={goHome}
             onRedoCalibration={redoCalibration}
           />
+        )}
+
+        {confirmLeaveQuiz && (
+          <div className="confirm-overlay">
+            <div className="confirm-dialog">
+              <p className="confirm-title">Leave today's daily?</p>
+              <p className="confirm-body">
+                Your progress on today's daily won't be saved if you leave now — you'll need to start over.
+              </p>
+              <div className="confirm-actions">
+                <button className="btn-secondary" style={{ marginTop: 0 }} onClick={confirmLeaveQuizNo}>
+                  Keep going
+                </button>
+                <button className="btn-danger" onClick={confirmLeaveQuizYes}>
+                  Leave anyway
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
       <Analytics />
