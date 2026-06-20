@@ -41,6 +41,7 @@ export default function App() {
   const [dailyQueue, setDailyQueue]             = useState([]);
   const [dailyQueueIndex, setDailyQueueIndex]   = useState(0);
   const [dailyResults, setDailyResults]         = useState({});
+  const [currentAnswer, setCurrentAnswer]       = useState(null);
   // Persisted so an in-progress daily survives back-navigation, closing the
   // app, or the device killing the tab — resuming lands on the exact same
   // question rather than regenerating a fresh set.
@@ -147,6 +148,7 @@ export default function App() {
       setCurrentSubject(inProgressSession.currentSubject);
       setSessionQuestions(inProgressSession.questions || []);
       setPrevLevels(inProgressSession.prevLevels || {});
+      setCurrentAnswer(inProgressSession.currentAnswer || null);
       quizInProgressRef.current = true;
       setScreen(SCREENS.QUIZ);
       window.history.replaceState({ screen: SCREENS.QUIZ }, '');
@@ -212,6 +214,7 @@ export default function App() {
       setCurrentSubject(inProgressSession.currentSubject);
       setSessionQuestions(inProgressSession.questions || []);
       setPrevLevels(inProgressSession.prevLevels || {});
+      setCurrentAnswer(inProgressSession.currentAnswer || null);
       quizInProgressRef.current = true;
       navigateTo(SCREENS.QUIZ);
       return;
@@ -227,15 +230,24 @@ export default function App() {
     const pool = getQuestionPool(firstSub, level, 1);
     setCurrentSubject(firstSub);
     setSessionQuestions(pool);
+    setCurrentAnswer(null);
     quizInProgressRef.current = true;
     const levels = {};
     Object.keys(subjects).forEach(k => { levels[k] = getLevelFromXP(subjects[k]?.xp || 0); });
     setInProgressSession({
       order, queueIndex: 0, results: {},
       currentSubject: firstSub, questions: pool,
-      prevLevels: levels,
+      prevLevels: levels, currentAnswer: null,
     });
     navigateTo(SCREENS.QUIZ);
+  }
+
+  function handleQuizAnswer({ selectedIdx, correct }) {
+    setCurrentAnswer({ selectedIdx, correct });
+    setInProgressSession(prev => prev && ({
+      ...prev,
+      currentAnswer: { selectedIdx, correct },
+    }));
   }
 
   function handleQuizComplete({ score, xpEarned, subject, correct, question, selectedIdx }) {
@@ -266,6 +278,7 @@ export default function App() {
       const pool = getQuestionPool(nextSub, level, 1);
       setCurrentSubject(nextSub);
       setSessionQuestions(pool);
+      setCurrentAnswer(null);
       // Still mid-daily — replace the current history entry rather than
       // stacking one per question, so back from question 3 doesn't land
       // you on question 2's stale state.
@@ -276,6 +289,7 @@ export default function App() {
         results: newResults,
         currentSubject: nextSub,
         questions: pool,
+        currentAnswer: null,
       }));
     } else {
       const today = getTodayKey();
@@ -362,6 +376,8 @@ export default function App() {
             fiftyFiftyUses={getFiftyFiftyUses()}
             onUseFiftyFifty={useFiftyFifty}
             onComplete={handleQuizComplete}
+            onAnswer={handleQuizAnswer}
+            initialAnswer={currentAnswer}
             onHome={() => setConfirmLeaveQuiz(true)}
           />
         )}

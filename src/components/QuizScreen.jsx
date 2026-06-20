@@ -6,24 +6,25 @@ import { playSound } from '../utils/sound';
 
 export default function QuizScreen({
   subject, questions, totalSubjects, currentSubjectIndex,
-  isDaily, fiftyFiftyUses, onUseFiftyFifty, onComplete, onHome
+  isDaily, fiftyFiftyUses, onUseFiftyFifty, onComplete, onHome,
+  initialAnswer, onAnswer
 }) {
   const cfg = SUBJECT_CONFIG[subject];
   const sc = SUBJECT_COLORS[subject];
   const total = questions.length;
 
   const [current, setCurrent]       = useState(0);
-  const [score, setScore]           = useState(0);
-  const [xpEarned, setXpEarned]     = useState(0);
-  const [selected, setSelected]     = useState(null);
-  const [answered, setAnswered]     = useState(false);
+  const [score, setScore]           = useState(initialAnswer?.correct ? 1 : 0);
+  const [xpEarned, setXpEarned]     = useState(initialAnswer?.correct ? XP_PER_CORRECT : 0);
+  const [selected, setSelected]     = useState(initialAnswer ? initialAnswer.selectedIdx : null);
+  const [answered, setAnswered]     = useState(!!initialAnswer);
   const [eliminated, setEliminated] = useState([]);
   const [xpFloat, setXpFloat]       = useState(false);
   const [qAnim, setQAnim]           = useState('q-enter');
   const cardRef    = useRef(null);
-  const scoreRef   = useRef(0);
-  const xpRef      = useRef(0);
-  const selectedRef = useRef(null);
+  const scoreRef   = useRef(initialAnswer?.correct ? 1 : 0);
+  const xpRef      = useRef(initialAnswer?.correct ? XP_PER_CORRECT : 0);
+  const selectedRef = useRef(initialAnswer ? initialAnswer.selectedIdx : null);
 
   const q = questions[current];
   const isLast = current + 1 >= total;
@@ -31,7 +32,19 @@ export default function QuizScreen({
     ? Math.round((currentSubjectIndex / totalSubjects) * 100)
     : Math.round((current / total) * 100);
 
+  const isFirstRun = useRef(true);
+
   useEffect(() => {
+    if (isFirstRun.current) {
+      // On first mount, if we're resuming a question that was already
+      // answered before the user navigated away, keep that state instead of
+      // wiping it — otherwise resuming lets them answer the same question twice.
+      isFirstRun.current = false;
+      if (initialAnswer) {
+        setQAnim('');
+        return;
+      }
+    }
     setSelected(null); setAnswered(false); setEliminated([]);
     setXpFloat(false);
     setScore(0); setXpEarned(0);
@@ -56,7 +69,8 @@ export default function QuizScreen({
     setSelected(idx);
     selectedRef.current = idx;
     setAnswered(true);
-    if (idx === q.a) {
+    const isCorrect = idx === q.a;
+    if (isCorrect) {
       scoreRef.current += 1;
       xpRef.current += XP_PER_CORRECT;
       setScore(scoreRef.current);
@@ -69,6 +83,9 @@ export default function QuizScreen({
       playSound('wrong');
       setTimeout(() => cardRef.current?.classList.remove('shake'), 450);
     }
+    // Persist immediately so back-navigation before "Next" can't let the
+    // same question be answered twice on resume.
+    if (onAnswer) onAnswer({ selectedIdx: idx, correct: isCorrect });
   }
 
   function handleNext() {
