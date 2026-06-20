@@ -10,7 +10,7 @@ const SHORT_LABEL = {
   socialstudies: 'Social',
 };
 
-export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview, onOpenSettings }) {
+export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview, onOpenSettings, inProgress }) {
   const [showTheme, setShowTheme] = useState(false);
   const complete = isDailyComplete(dailyState);
   const now = new Date();
@@ -72,10 +72,10 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
         </div>
         <div className="daily-light-info">
           <p className="daily-light-title">
-            {complete ? 'Daily complete' : "Start today's daily"}
+            {complete ? 'Daily complete' : inProgress ? "Continue today's daily" : "Start today's daily"}
           </p>
           <p className="daily-light-sub">
-            {complete ? 'Come back tomorrow to keep your streak' : '5 subjects · ~3 min'}
+            {complete ? 'Come back tomorrow to keep your streak' : inProgress ? 'Pick up right where you left off' : '5 subjects · ~3 min'}
           </p>
         </div>
         <div className={`daily-arrow-light${complete ? ' daily-arrow-light--done' : ''}`}>

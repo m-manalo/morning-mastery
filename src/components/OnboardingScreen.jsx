@@ -1,17 +1,11 @@
-import { useState } from 'react';
 import { SUBJECT_CONFIG, DIFFICULTY_LABELS } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 
-const STEPS = { WELCOME: 0, CALIBRATE: 1, CONFIRM: 2 };
+export const ONBOARD_STEPS = { WELCOME: 0, CALIBRATE: 1, CONFIRM: 2 };
 
-export default function OnboardingScreen({ onComplete }) {
-  const [step, setStep] = useState(STEPS.WELCOME);
-  const [choices, setChoices] = useState(
-    Object.fromEntries(Object.keys(SUBJECT_CONFIG).map(k => [k, 'beginner']))
-  );
-
+export default function OnboardingScreen({ step, onStepChange, choices, onChoicesChange, onComplete }) {
   function setChoice(subject, key) {
-    setChoices(prev => ({ ...prev, [subject]: key }));
+    onChoicesChange({ ...choices, [subject]: key });
   }
 
   function finish() {
@@ -34,7 +28,7 @@ export default function OnboardingScreen({ onComplete }) {
       </div>
 
       {/* STEP 1 — Welcome */}
-      {step === STEPS.WELCOME && (
+      {step === ONBOARD_STEPS.WELCOME && (
         <>
           <div className="onboard-icon">
             <span style={{ fontSize: 32 }}>☀️</span>
@@ -68,14 +62,14 @@ export default function OnboardingScreen({ onComplete }) {
             </div>
           </div>
 
-          <button className="btn-primary" onClick={() => setStep(STEPS.CALIBRATE)}>
+          <button className="btn-primary" onClick={() => onStepChange(ONBOARD_STEPS.CALIBRATE)}>
             Let's get started →
           </button>
         </>
       )}
 
       {/* STEP 2 — Calibrate */}
-      {step === STEPS.CALIBRATE && (
+      {step === ONBOARD_STEPS.CALIBRATE && (
         <>
           <p className="app-title" style={{ marginBottom: 6 }}>How confident are you?</p>
           <p className="t-secondary small" style={{ marginBottom: '1rem', lineHeight: 1.5 }}>
@@ -107,14 +101,14 @@ export default function OnboardingScreen({ onComplete }) {
             );
           })}
 
-          <button className="btn-primary" onClick={() => setStep(STEPS.CONFIRM)}>
+          <button className="btn-primary" onClick={() => onStepChange(ONBOARD_STEPS.CONFIRM)}>
             Continue →
           </button>
         </>
       )}
 
       {/* STEP 3 — Confirm */}
-      {step === STEPS.CONFIRM && (
+      {step === ONBOARD_STEPS.CONFIRM && (
         <>
           <p className="app-title" style={{ marginBottom: 6 }}>You're all set</p>
           <p className="t-secondary small" style={{ marginBottom: '1rem', lineHeight: 1.5 }}>

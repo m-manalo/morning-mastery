@@ -7,7 +7,7 @@ import {
   getLevelFromXP, getTodayKey, isDailyComplete, getShuffledDailyOrder,
   getInitialStats, updateStatsAfterDaily
 } from './utils/gameUtils';
-import OnboardingScreen from './components/OnboardingScreen';
+import OnboardingScreen, { ONBOARD_STEPS } from './components/OnboardingScreen';
 import HomeScreen from './components/HomeScreen';
 import QuizScreen from './components/QuizScreen';
 import DailyCompleteScreen from './components/DailyCompleteScreen';
@@ -32,15 +32,26 @@ export default function App() {
   const [onboarded, setOnboarded]   = useStorage('mm_onboarded_v1', false);
   const [stats, setStats]           = useStorage('mm_stats_v1', getInitialStats());
 
-  const [screen, setScreen]                     = useState(onboarded ? SCREENS.HOME : SCREENS.ONBOARDING);
+  const [screen, setScreen]                     = useState(() => {
+    if (!onboarded) return SCREENS.ONBOARDING;
+    return SCREENS.HOME; // Resume logic for an in-progress session runs after mount, below
+  });
   const [currentSubject, setCurrentSubject]     = useState(null);
   const [sessionQuestions, setSessionQuestions] = useState([]);
   const [dailyQueue, setDailyQueue]             = useState([]);
   const [dailyQueueIndex, setDailyQueueIndex]   = useState(0);
   const [dailyResults, setDailyResults]         = useState({});
+  // Persisted so an in-progress daily survives back-navigation, closing the
+  // app, or the device killing the tab — resuming lands on the exact same
+  // question rather than regenerating a fresh set.
+  const [inProgressSession, setInProgressSession] = useStorage('mm_inprogress_v1', null);
   const [prevLevels, setPrevLevels]             = useState({});
   const [reviewIndex, setReviewIndex]           = useState(0);
   const [confirmLeaveQuiz, setConfirmLeaveQuiz] = useState(false);
+  const [onboardStep, setOnboardStep]           = useState(ONBOARD_STEPS.WELCOME);
+  const [onboardChoices, setOnboardChoices]     = useState(
+    Object.fromEntries(Object.keys(SUBJECT_CONFIG).map(k => [k, 'beginner']))
+  );
 
   // Tracks whether we're mid-quiz with unanswered progress that would be lost
   // if the user navigated away. Used to gate the back button with a confirmation
@@ -64,6 +75,15 @@ export default function App() {
     }
   }
 
+  // Onboarding has its own internal steps (Welcome → Calibrate → Confirm) that
+  // also need to participate in browser history, otherwise pressing back
+  // partway through onboarding falls through and closes the app — same root
+  // cause as the screen-level navigation issue, just one level deeper.
+  function changeOnboardStep(nextStep) {
+    setOnboardStep(nextStep);
+    window.history.pushState({ screen: SCREENS.ONBOARDING, onboardStep: nextStep }, '');
+  }
+
   useEffect(() => {
     // Seed the initial history entry so there's always something to land on
     window.history.replaceState({ screen }, '');
@@ -82,14 +102,42 @@ export default function App() {
       if (target === SCREENS.HOME) {
         setCurrentSubject(null);
       }
+      if (target === SCREENS.ONBOARDING) {
+        setOnboardStep(e.state?.onboardStep ?? ONBOARD_STEPS.WELCOME);
+      }
     }
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // On load, resume an in-progress daily if one exists and is still valid
+  // for today (e.g. the app was closed mid-quiz, or the back button was
+  // pressed) — restores the exact question rather than starting over.
+  useEffect(() => {
+    if (!onboarded) return;
+    if (isDailyComplete(dailyState)) {
+      // Daily already finished elsewhere/since — discard any stale session
+      if (inProgressSession) setInProgressSession(null);
+      return;
+    }
+    if (inProgressSession && inProgressSession.order?.length) {
+      setDailyQueue(inProgressSession.order);
+      setDailyQueueIndex(inProgressSession.queueIndex || 0);
+      setDailyResults(inProgressSession.results || {});
+      setCurrentSubject(inProgressSession.currentSubject);
+      setSessionQuestions(inProgressSession.questions || []);
+      setPrevLevels(inProgressSession.prevLevels || {});
+      quizInProgressRef.current = true;
+      setScreen(SCREENS.QUIZ);
+      window.history.replaceState({ screen: SCREENS.QUIZ }, '');
+    }
+  }, []);
+
   function confirmLeaveQuizYes() {
     setConfirmLeaveQuiz(false);
+    // Progress is persisted via inProgressSession, so leaving just goes home —
+    // nothing is lost, the daily resumes from this exact question next time.
     quizInProgressRef.current = false;
     setCurrentSubject(null);
     setScreen(SCREENS.HOME);
@@ -135,6 +183,21 @@ export default function App() {
 
   function startDaily() {
     if (isDailyComplete(dailyState)) return;
+
+    // Resume an already-in-progress session rather than generating a new one —
+    // this is what stops "go back, tap start again" from resetting the questions.
+    if (inProgressSession && inProgressSession.order?.length) {
+      setDailyQueue(inProgressSession.order);
+      setDailyQueueIndex(inProgressSession.queueIndex || 0);
+      setDailyResults(inProgressSession.results || {});
+      setCurrentSubject(inProgressSession.currentSubject);
+      setSessionQuestions(inProgressSession.questions || []);
+      setPrevLevels(inProgressSession.prevLevels || {});
+      quizInProgressRef.current = true;
+      navigateTo(SCREENS.QUIZ);
+      return;
+    }
+
     capturePrevLevels();
     const order = getShuffledDailyOrder();
     setDailyQueue(order);
@@ -146,6 +209,13 @@ export default function App() {
     setCurrentSubject(firstSub);
     setSessionQuestions(pool);
     quizInProgressRef.current = true;
+    const levels = {};
+    Object.keys(subjects).forEach(k => { levels[k] = getLevelFromXP(subjects[k]?.xp || 0); });
+    setInProgressSession({
+      order, queueIndex: 0, results: {},
+      currentSubject: firstSub, questions: pool,
+      prevLevels: levels,
+    });
     navigateTo(SCREENS.QUIZ);
   }
 
@@ -181,6 +251,13 @@ export default function App() {
       // stacking one per question, so back from question 3 doesn't land
       // you on question 2's stale state.
       window.history.replaceState({ screen: SCREENS.QUIZ }, '');
+      setInProgressSession(prev => prev && ({
+        ...prev,
+        queueIndex: nextIndex,
+        results: newResults,
+        currentSubject: nextSub,
+        questions: pool,
+      }));
     } else {
       const today = getTodayKey();
       setDailyState({ completedDate: today, results: newResults });
@@ -194,6 +271,7 @@ export default function App() {
       });
       setStats(prev => updateStatsAfterDaily(prev, newResults, newStreakCount));
       quizInProgressRef.current = false;
+      setInProgressSession(null);
       navigateTo(SCREENS.DAILY_COMPLETE, true);
     }
   }
@@ -211,6 +289,7 @@ export default function App() {
   function redoCalibration() {
     // Stats and streak are preserved — only subject levels reset via onboarding
     setOnboarded(false);
+    setOnboardStep(ONBOARD_STEPS.WELCOME);
     navigateTo(SCREENS.ONBOARDING);
   }
 
@@ -232,7 +311,13 @@ export default function App() {
     <div className="app-container">
       <div className="card-fixed">
         {screen === SCREENS.ONBOARDING && (
-          <OnboardingScreen onComplete={handleOnboardingComplete} />
+          <OnboardingScreen
+            step={onboardStep}
+            onStepChange={changeOnboardStep}
+            choices={onboardChoices}
+            onChoicesChange={setOnboardChoices}
+            onComplete={handleOnboardingComplete}
+          />
         )}
         {screen === SCREENS.HOME && (
           <HomeScreen
@@ -244,6 +329,7 @@ export default function App() {
             onStartDaily={startDaily}
             onOpenReview={openReview}
             onOpenSettings={openSettings}
+            inProgress={!!(inProgressSession && inProgressSession.order?.length)}
           />
         )}
         {screen === SCREENS.QUIZ && (
@@ -291,16 +377,16 @@ export default function App() {
         {confirmLeaveQuiz && (
           <div className="confirm-overlay">
             <div className="confirm-dialog">
-              <p className="confirm-title">Leave today's daily?</p>
+              <p className="confirm-title">Pause today's daily?</p>
               <p className="confirm-body">
-                Your progress on today's daily won't be saved if you leave now — you'll need to start over.
+                No rush — your place is saved. Come back any time today and you'll pick up on this exact question.
               </p>
               <div className="confirm-actions">
                 <button className="btn-secondary" style={{ marginTop: 0 }} onClick={confirmLeaveQuizNo}>
                   Keep going
                 </button>
-                <button className="btn-danger" onClick={confirmLeaveQuizYes}>
-                  Leave anyway
+                <button className="btn-primary" style={{ marginTop: 0 }} onClick={confirmLeaveQuizYes}>
+                  Go home
                 </button>
               </div>
             </div>
