@@ -3,7 +3,7 @@
 // All actual data (progress, streaks, theme, etc.) lives in localStorage,
 // which is untouched by this — this just caches the static files.
 
-const CACHE_NAME = 'morning-mastery-v1';
+const CACHE_NAME = 'morning-mastery-v2';
 
 // Core files needed for the app to boot offline.
 // CRA's hashed JS/CSS bundle filenames are cached on first visit via the fetch handler below.
@@ -53,6 +53,22 @@ self.addEventListener('fetch', (event) => {
         .catch(() =>
           caches.match(request).then((cached) => cached || caches.match('/index.html'))
         )
+    );
+    return;
+  }
+
+  // Sound files are network-first — they're small and change occasionally
+  // during development, and a stale cached sound is a worse experience than
+  // one extra network request. Falls back to cache only if offline.
+  if (request.url.includes('/sounds/')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }

@@ -49,6 +49,13 @@ export default function App() {
   const [reviewIndex, setReviewIndex]           = useState(0);
   const [confirmLeaveQuiz, setConfirmLeaveQuiz] = useState(false);
   const [onboardStep, setOnboardStep]           = useState(ONBOARD_STEPS.WELCOME);
+  // Refs mirroring screen/onboardStep so the popstate handler (registered
+  // once on mount) always re-pushes the *current* values, not whatever they
+  // were when the effect first ran.
+  const screenRef = useRef(screen);
+  const onboardStepRef = useRef(onboardStep);
+  useEffect(() => { screenRef.current = screen; }, [screen]);
+  useEffect(() => { onboardStepRef.current = onboardStep; }, [onboardStep]);
   const [onboardChoices, setOnboardChoices]     = useState(
     Object.fromEntries(Object.keys(SUBJECT_CONFIG).map(k => [k, 'beginner']))
   );
@@ -85,8 +92,14 @@ export default function App() {
   }
 
   useEffect(() => {
-    // Seed the initial history entry so there's always something to land on
-    window.history.replaceState({ screen }, '');
+    // Seed two history entries: a "floor" sentinel, then the real starting
+    // screen on top. Without the floor, pressing back on the very first
+    // screen a user sees has nowhere to go within the app's own history and
+    // falls through to closing the browser/PWA outright. With the floor in
+    // place, that first back-press lands safely on the floor (which we
+    // re-push immediately below) rather than exiting unexpectedly.
+    window.history.replaceState({ screen: '__floor__' }, '');
+    window.history.pushState({ screen, onboardStep }, '');
 
     function handlePopState(e) {
       if (quizInProgressRef.current) {
@@ -96,8 +109,14 @@ export default function App() {
         setConfirmLeaveQuiz(true);
         return;
       }
+      if (e.state?.screen === '__floor__' || !e.state) {
+        // Hit the floor — re-push the current screen so the app stays open
+        // rather than falling through to a black screen / app close.
+        window.history.pushState({ screen: screenRef.current, onboardStep: onboardStepRef.current }, '');
+        return;
+      }
       isPoppingRef.current = true;
-      const target = e.state?.screen || SCREENS.HOME;
+      const target = e.state.screen;
       setScreen(target);
       if (target === SCREENS.HOME) {
         setCurrentSubject(null);
