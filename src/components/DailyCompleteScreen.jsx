@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SUBJECT_CONFIG, XP_PER_LEVEL } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak, getStreakMilestone } from '../utils/gameUtils';
 import { getDailyQuote } from '../data/quotes';
 import { getPerspectiveLine } from '../data/perspectives';
 import { shareResult } from './ShareResult';
+import { playSound } from '../utils/sound';
 
 function milestoneCopy(n) {
   if (n >= 365) return "A Full Year 🎉";
@@ -29,6 +30,11 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
     return getLevelFromXP(subjects[k]?.xp || 0) > (prevLevels[k] || 1);
   });
   const milestone = getStreakMilestone(streak.count || 0);
+
+  useEffect(() => {
+    playSound(milestone ? 'milestone' : 'complete');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleShare() {
     shareResult(

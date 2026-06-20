@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { SUBJECT_CONFIG, XP_PER_CORRECT } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import SubjectIllustration from './SubjectIllustration';
+import { playSound } from '../utils/sound';
 
 export default function QuizScreen({
   subject, questions, totalSubjects, currentSubjectIndex,
@@ -60,9 +61,11 @@ export default function QuizScreen({
       setScore(scoreRef.current);
       setXpEarned(xpRef.current);
       setXpFloat(true);
+      playSound('correct');
       setTimeout(() => setXpFloat(false), 1200);
     } else {
       cardRef.current?.classList.add('shake');
+      playSound('wrong');
       setTimeout(() => cardRef.current?.classList.remove('shake'), 450);
     }
   }
