@@ -1,8 +1,7 @@
 {
-  "crons": [
-    {
-      "path": "/api/send-notifications",
-      "schedule": "* * * * *"
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 10
     }
-  ]
+  }
 }

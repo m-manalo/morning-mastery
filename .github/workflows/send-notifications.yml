@@ -1,0 +1,28 @@
+name: Send Daily Notifications
+
+on:
+  schedule:
+    # Runs every minute, 24/7
+    - cron: '* * * * *'
+  # Allow manual trigger from GitHub Actions tab (useful for testing)
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+
+    steps:
+      - name: Trigger notification endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.VERCEL_APP_URL }}/api/send-notifications")
+          
+          echo "Response status: $response"
+          
+          if [ "$response" != "200" ]; then
+            echo "Warning: unexpected response $response"
+            exit 1
+          fi
