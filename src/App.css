@@ -719,3 +719,53 @@ body {
     margin-top: 1.5rem;
   }
 }
+
+/* ── Notification settings ── */
+.notif-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-bottom-width: 3px;
+  border-bottom-color: var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+.notif-time-input {
+  background: var(--accent-light);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-text);
+  outline: none;
+  cursor: pointer;
+}
+.notif-error {
+  font-size: 11px;
+  color: #B33A3A;
+  background: #FDF5F5;
+  border: 1.5px solid #E8C0C0;
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+.notif-unsupported {
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+.notif-loading { color: var(--text2); font-size: 11px; }
+.notif-success { color: #4A9E47; font-size: 11px; font-weight: 500; }

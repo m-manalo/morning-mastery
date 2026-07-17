@@ -1,21 +1,100 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SUBJECT_CONFIG } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP } from '../utils/gameUtils';
 import { getSoundEnabled, setSoundEnabled, playSound } from '../utils/sound';
+import { isPushSupported, getNotificationPermission, enableNotifications, disableNotifications, getUserTimezone } from '../utils/notifications';
+import { ensureAnonymousSession, getPushSubscription, updateNotifyTime } from '../utils/supabase';
 
 export default function SettingsScreen({ subjects, streak, stats, onHome, onRedoCalibration }) {
-  const [soundOn, setSoundOn] = useState(getSoundEnabled());
+  const [soundOn, setSoundOn]           = useState(getSoundEnabled());
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifTime, setNotifTime]       = useState('08:00');
+  const [notifStatus, setNotifStatus]   = useState('idle'); // idle | loading | success | error
+  const [notifError, setNotifError]     = useState('');
+  const [userId, setUserId]             = useState(null);
+  const pushSupported = isPushSupported();
+
   const totalAnswered = stats?.totalAnswered || 0;
   const totalCorrect = stats?.totalCorrect || 0;
   const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
   const longestStreak = Math.max(stats?.longestStreak || 0, streak?.count || 0);
 
+  // On mount, check existing notification state
+  useEffect(() => {
+    async function loadNotifState() {
+      if (!pushSupported) return;
+      const permission = getNotificationPermission();
+      if (permission !== 'granted') return;
+
+      const uid = await ensureAnonymousSession();
+      setUserId(uid);
+      if (!uid) return;
+
+      const sub = await getPushSubscription(uid).catch(() => null);
+      if (sub) {
+        setNotifEnabled(sub.enabled);
+        setNotifTime(sub.notify_time?.slice(0, 5) || '08:00');
+      }
+    }
+    loadNotifState();
+  }, [pushSupported]);
+
   function toggleSound() {
     const next = !soundOn;
     setSoundOn(next);
     setSoundEnabled(next);
-    if (next) playSound('tap'); // small confirmation it's working
+    if (next) playSound('tap');
+  }
+
+  async function handleNotifToggle() {
+    if (notifStatus === 'loading') return;
+    setNotifStatus('loading');
+    setNotifError('');
+
+    if (notifEnabled) {
+      // Turn off
+      const result = await disableNotifications();
+      if (result.success) {
+        setNotifEnabled(false);
+        setNotifStatus('idle');
+      } else {
+        setNotifError('Failed to disable. Please try again.');
+        setNotifStatus('error');
+      }
+    } else {
+      // Turn on
+      const timezone = getUserTimezone();
+      const timeForDB = notifTime + ':00'; // HH:MM -> HH:MM:SS for the time column
+      const result = await enableNotifications(timeForDB, timezone);
+      if (result.success) {
+        setNotifEnabled(true);
+        setNotifStatus('success');
+        const uid = await ensureAnonymousSession();
+        setUserId(uid);
+        setTimeout(() => setNotifStatus('idle'), 2500);
+      } else {
+        const msgs = {
+          push_unsupported: 'Push notifications aren\'t supported on this browser.',
+          permission_denied: 'You\'ve blocked notifications — enable them in your browser settings.',
+          vapid_missing: 'Notification service not configured yet.',
+          auth_failed: 'Could not connect to the server. Check your connection and try again.',
+        };
+        setNotifError(msgs[result.error] || 'Something went wrong. Please try again.');
+        setNotifStatus('error');
+      }
+    }
+  }
+
+  async function handleTimeChange(e) {
+    const newTime = e.target.value;
+    setNotifTime(newTime);
+    if (!notifEnabled || !userId) return;
+    try {
+      await updateNotifyTime(userId, newTime + ':00', getUserTimezone());
+    } catch {
+      // Silent fail — time will resync on next toggle
+    }
   }
 
   return (
@@ -65,14 +144,61 @@ export default function SettingsScreen({ subjects, streak, stats, onHome, onRedo
       })}
 
       <div className="divider" />
-
       <p className="section-label">preferences</p>
+
+      {/* Sound toggle */}
       <button className="settings-toggle-row" onClick={toggleSound}>
         <span className="settings-toggle-label">🔊 Sound effects</span>
         <span className={`toggle-switch${soundOn ? ' toggle-switch--on' : ''}`}>
           <span className="toggle-switch-knob" />
         </span>
       </button>
+
+      {/* Notification toggle */}
+      {!pushSupported ? (
+        <div className="notif-unsupported">
+          🔔 Daily reminders aren't supported on this browser. Install the app to your home screen to enable them.
+        </div>
+      ) : (
+        <>
+          <button
+            className="settings-toggle-row"
+            onClick={handleNotifToggle}
+            disabled={notifStatus === 'loading'}
+          >
+            <span className="settings-toggle-label">
+              🔔 Daily reminder
+              {notifStatus === 'loading' && <span className="notif-loading"> ...</span>}
+              {notifStatus === 'success' && <span className="notif-success"> ✓ Set!</span>}
+            </span>
+            <span className={`toggle-switch${notifEnabled ? ' toggle-switch--on' : ''}`}>
+              <span className="toggle-switch-knob" />
+            </span>
+          </button>
+
+          {notifEnabled && (
+            <div className="notif-time-row">
+              <span className="settings-toggle-label">⏰ Remind me at</span>
+              <input
+                type="time"
+                className="notif-time-input"
+                value={notifTime}
+                onChange={handleTimeChange}
+              />
+            </div>
+          )}
+
+          {notifStatus === 'error' && (
+            <p className="notif-error">{notifError}</p>
+          )}
+
+          {notifEnabled && (
+            <p className="t-secondary small" style={{ marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>
+              We'll nudge you at {notifTime} every day — only if you haven't opened the app yet.
+            </p>
+          )}
+        </>
+      )}
 
       <div className="divider" />
 
@@ -82,6 +208,13 @@ export default function SettingsScreen({ subjects, streak, stats, onHome, onRedo
       <p className="t-secondary small center" style={{ marginTop: 8 }}>
         This resets your subject levels back to a fresh starting point — your stats above are kept.
       </p>
+
+      <button className="dev-reset" onClick={() => {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('mm_')) localStorage.removeItem(k);
+        });
+        window.location.reload();
+      }}>dev reset</button>
     </div>
   );
 }
