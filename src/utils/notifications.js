@@ -33,33 +33,42 @@ export async function enableNotifications(notifyTime, timezone) {
     return { success: false, error: 'push_unsupported' };
   }
   if (!VAPID_PUBLIC_KEY) {
+    console.error('VAPID public key missing — check REACT_APP_VAPID_PUBLIC_KEY env var');
     return { success: false, error: 'vapid_missing' };
   }
 
   try {
     // Step 1 — anonymous session
+    console.log('Step 1: Getting anonymous session...');
     const userId = await ensureAnonymousSession();
+    console.log('Step 1 result — userId:', userId);
     if (!userId) return { success: false, error: 'auth_failed' };
 
     // Step 2 — permission
+    console.log('Step 2: Requesting notification permission...');
     const permission = await Notification.requestPermission();
+    console.log('Step 2 result — permission:', permission);
     if (permission !== 'granted') {
       return { success: false, error: 'permission_denied' };
     }
 
     // Step 3 — push subscription via service worker
+    console.log('Step 3: Subscribing to push manager...');
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
+    console.log('Step 3 result — subscription endpoint:', subscription.endpoint);
 
     // Step 4 — save to Supabase
+    console.log('Step 4: Saving subscription to Supabase...');
     await savePushSubscription(userId, subscription, notifyTime, timezone);
+    console.log('Step 4 complete — subscription saved');
 
     return { success: true };
   } catch (err) {
-    console.error('enableNotifications failed:', err);
+    console.error('enableNotifications failed at step above:', err);
     return { success: false, error: err.message };
   }
 }

@@ -77,10 +77,10 @@ export default function SettingsScreen({ subjects, streak, stats, onHome, onRedo
         const msgs = {
           push_unsupported: 'Push notifications aren\'t supported on this browser.',
           permission_denied: 'You\'ve blocked notifications — enable them in your browser settings.',
-          vapid_missing: 'Notification service not configured yet.',
-          auth_failed: 'Could not connect to the server. Check your connection and try again.',
+          vapid_missing: 'Notification service not configured yet — env vars may be missing.',
+          auth_failed: 'Could not connect to Supabase. Check env vars and anonymous auth setting.',
         };
-        setNotifError(msgs[result.error] || 'Something went wrong. Please try again.');
+        setNotifError(msgs[result.error] || `Error: ${result.error}`);
         setNotifStatus('error');
       }
     }
@@ -194,7 +194,7 @@ export default function SettingsScreen({ subjects, streak, stats, onHome, onRedo
 
           {notifEnabled && (
             <p className="t-secondary small" style={{ marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>
-              We'll nudge you at {notifTime} every day — only if you haven't opened the app yet.
+              You'll get a daily nudge at {notifTime} every day to start your questions.
             </p>
           )}
         </>

@@ -17,7 +17,7 @@ const supabase = createClient(
 
 const NOTIFICATION_PAYLOAD = JSON.stringify({
   title: 'Morning Mastery',
-  body: "Your daily 5 questions are ready. 3 minutes, then you're done ☀️",
+  body: "Time for your 5 daily questions — takes about 3 minutes ☀️",
   icon: '/icons/icon-192.png',
   badge: '/icons/icon-192.png',
   tag: 'daily-reminder',
@@ -58,16 +58,23 @@ module.exports = async function handler(req, res) {
   // accounting for each subscriber's timezone.
   const toNotify = subscriptions.filter(sub => {
     try {
-      const localTime = new Date().toLocaleTimeString('en-GB', {
+      const now = new Date();
+      // Get the current time in the user's timezone as HH:MM:SS
+      const localTime = now.toLocaleTimeString('en-GB', {
         timeZone: sub.timezone,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
         hour12: false
       });
-      return localTime === sub.notify_time;
-    } catch {
-      // Invalid timezone — skip rather than crash
+      // Normalise both sides to HH:MM for comparison (ignore seconds)
+      // This gives a 1-minute window rather than requiring an exact second match
+      const localHHMM = localTime.slice(0, 5);
+      const storedHHMM = sub.notify_time.slice(0, 5);
+      console.log(`User ${sub.user_id}: local=${localHHMM} stored=${storedHHMM} tz=${sub.timezone} match=${localHHMM === storedHHMM}`);
+      return localHHMM === storedHHMM;
+    } catch (err) {
+      console.warn(`Time match error for user ${sub.user_id}:`, err.message);
       return false;
     }
   });

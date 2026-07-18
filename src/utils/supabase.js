@@ -28,10 +28,16 @@ export const supabase = createClient(
 export async function ensureAnonymousSession() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    console.log('Existing session:', session?.user?.id || 'none');
     if (session?.user) return session.user.id;
 
+    console.log('No session found, signing in anonymously...');
     const { data, error } = await supabase.auth.signInAnonymously();
-    if (error) throw error;
+    if (error) {
+      console.error('Anonymous sign-in error:', error);
+      throw error;
+    }
+    console.log('Anonymous sign-in success, userId:', data.user?.id);
     return data.user?.id || null;
   } catch (err) {
     console.warn('Anonymous auth failed:', err.message);
@@ -39,9 +45,9 @@ export async function ensureAnonymousSession() {
   }
 }
 
-// Saves or updates this device's push subscription in the database.
 export async function savePushSubscription(userId, subscription, notifyTime, timezone) {
   const sub = subscription.toJSON();
+  console.log('Saving subscription for userId:', userId, 'time:', notifyTime, 'tz:', timezone);
   const { error } = await supabase
     .from('push_subscriptions')
     .upsert({
@@ -55,7 +61,11 @@ export async function savePushSubscription(userId, subscription, notifyTime, tim
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
 
-  if (error) throw error;
+  if (error) {
+    console.error('savePushSubscription error:', error);
+    throw error;
+  }
+  console.log('Subscription saved successfully');
 }
 
 // Updates just the notify_time and timezone for an existing subscription.
