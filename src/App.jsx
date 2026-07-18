@@ -14,6 +14,7 @@ import DailyCompleteScreen from './components/DailyCompleteScreen';
 import ReviewScreen from './components/ReviewScreen';
 import SettingsScreen from './components/SettingsScreen';
 import { playSound } from './utils/sound';
+import { pushProgress, pullProgress } from './utils/sync';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
@@ -131,6 +132,33 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Pull progress from Supabase on first load.
+  // If remote data is "better" than local (e.g. device was wiped, or this is
+  // a new device/browser for this user), writes it to localStorage so the
+  // app boots with the correct synced state. Runs silently in the background
+  // — the user never sees any indication this is happening.
+  useEffect(() => {
+    if (!onboarded) return;
+    pullProgress().then(updated => {
+      if (updated) {
+        // Remote data was written to localStorage — re-read it into React state
+        // by reading the keys directly, since useStorage only reads on mount.
+        try {
+          const raw = localStorage.getItem('mm_subjects_v2');
+          if (raw) setSubjects(JSON.parse(raw));
+        } catch {}
+        try {
+          const raw = localStorage.getItem('mm_streak_v2');
+          if (raw) setStreak(JSON.parse(raw));
+        } catch {}
+        try {
+          const raw = localStorage.getItem('mm_stats_v1');
+          if (raw) setStats(JSON.parse(raw));
+        } catch {}
+      }
+    });
+  }, []);
+
   // On load, resume an in-progress daily if one exists and is still valid
   // for today (e.g. the app was closed mid-quiz, or the back button was
   // pressed) — restores the exact question rather than starting over.
@@ -199,6 +227,7 @@ export default function App() {
     });
     setSubjects(newSubjects);
     setOnboarded(true);
+    setTimeout(() => pushProgress(), 1000);
     navigateTo(SCREENS.HOME, true);
   }
 
@@ -305,6 +334,8 @@ export default function App() {
       setStats(prev => updateStatsAfterDaily(prev, newResults, newStreakCount));
       quizInProgressRef.current = false;
       setInProgressSession(null);
+      // Push to Supabase after a short delay to let React state settle first
+      setTimeout(() => pushProgress(), 1000);
       navigateTo(SCREENS.DAILY_COMPLETE, true);
     }
   }
