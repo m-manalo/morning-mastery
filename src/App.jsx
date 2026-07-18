@@ -133,16 +133,13 @@ export default function App() {
   }, []);
 
   // Pull progress from Supabase on first load.
-  // If remote data is "better" than local (e.g. device was wiped, or this is
-  // a new device/browser for this user), writes it to localStorage so the
-  // app boots with the correct synced state. Runs silently in the background
-  // — the user never sees any indication this is happening.
+  // Runs regardless of onboarded state — if this is a new browser/device
+  // but the user has existing progress in Supabase, we restore it and
+  // skip onboarding entirely rather than making them recalibrate.
   useEffect(() => {
-    if (!onboarded) return;
     pullProgress().then(updated => {
       if (updated) {
-        // Remote data was written to localStorage — re-read it into React state
-        // by reading the keys directly, since useStorage only reads on mount.
+        // Remote data was written to localStorage — re-read into React state
         try {
           const raw = localStorage.getItem('mm_subjects_v2');
           if (raw) setSubjects(JSON.parse(raw));
@@ -159,6 +156,15 @@ export default function App() {
           const raw = localStorage.getItem('mm_daily_v2');
           if (raw) setDailyState(JSON.parse(raw));
         } catch {}
+        // If remote data exists, mark as onboarded and go to home
+        // regardless of what the local onboarded flag says
+        const remoteOnboarded = localStorage.getItem('mm_onboarded_v1');
+        if (!remoteOnboarded) {
+          localStorage.setItem('mm_onboarded_v1', 'true');
+          setOnboarded(true);
+          setScreen(SCREENS.HOME);
+          window.history.replaceState({ screen: SCREENS.HOME }, '');
+        }
       }
     });
   }, []);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SUBJECT_CONFIG, DAILY_SUBJECT_ORDER } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
-import { getLevelFromXP, getXPPercent, isDailyComplete } from '../utils/gameUtils';
+import { getLevelFromXP, getXPPercent, isDailyComplete, getWeekStreak, getTodayKey } from '../utils/gameUtils';
 import ThemePicker from './ThemePicker';
 import { playSound } from '../utils/sound';
 
@@ -130,6 +130,30 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
           <div className="divider" />
         </>
       )}
+
+      {/* Week calendar */}
+      <p className="section-label">this week</p>
+      <div className="week-row">
+        {getWeekStreak(streak).map(({ label, isToday, isFuture, played }) => {
+          const todayComplete = isToday && complete;
+          let dotClass = 'week-dot';
+          if (todayComplete) dotClass += ' week-dot--done';
+          else if (played) dotClass += ' week-dot--played';
+          else if (isToday) dotClass += ' week-dot--today';
+          else if (isFuture) dotClass += ' week-dot--future';
+          else dotClass += ' week-dot--missed';
+          return (
+            <div key={label} className="week-col">
+              <p className="week-lbl">{label.slice(0, 3)}</p>
+              <div className={dotClass}>
+                {todayComplete ? '✓' : played ? '✓' : isToday ? '→' : ''}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="divider" />
 
       {/* Progress overview */}
       <p className="section-label">your progress</p>

@@ -266,6 +266,43 @@ body {
 }
 .review-arrow { font-size: 14px; color: var(--text2); flex-shrink: 0; margin-left: 2px; }
 
+/* ── Week calendar (home screen) ── */
+.week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+.week-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.week-lbl {
+  font-size: 8px;
+  font-weight: 500;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.week-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+}
+.week-dot--played  { background: var(--accent); color: #fff; }
+.week-dot--done    { background: var(--accent); color: #fff; }
+.week-dot--today   { background: var(--accent-light); border: 2px solid var(--accent); color: var(--accent-text); }
+.week-dot--future  { background: var(--bar-bg); color: var(--text2); }
+.week-dot--missed  { background: #F5C8B8; color: #B05040; }
+
 /* ── Progress rings ── */
 .rings-row {
   display: flex;
