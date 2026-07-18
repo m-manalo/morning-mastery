@@ -210,11 +210,17 @@ export default function SettingsScreen({ subjects, streak, stats, onHome, onRedo
       </p>
 
       <button className="dev-reset" onClick={() => {
+        localStorage.removeItem('mm_daily_v2');
+        localStorage.removeItem('mm_inprogress_v1');
+        window.location.reload();
+      }}>dev reset daily</button>
+
+      <button className="dev-reset" onClick={() => {
         Object.keys(localStorage).forEach(k => {
           if (k.startsWith('mm_')) localStorage.removeItem(k);
         });
         window.location.reload();
-      }}>dev reset</button>
+      }}>dev reset all</button>
     </div>
   );
 }
