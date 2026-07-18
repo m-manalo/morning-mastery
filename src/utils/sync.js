@@ -64,7 +64,7 @@ function resolveConflict(local, remote) {
   const remoteXP = Object.values(remote.subjects || {}).reduce((sum, s) => sum + (s?.xp || 0), 0);
   resolved.subjects = localXP >= remoteXP ? local.subjects : remote.subjects;
 
-  // daily — take most recent completion
+  // daily — take most recent completion date
   const localDate = local.daily?.completedDate || '';
   const remoteDate = remote.daily?.completedDate || '';
   resolved.daily = localDate >= remoteDate ? local.daily : remote.daily;
@@ -88,6 +88,7 @@ export async function pushProgress() {
         subjects:   local.subjects  || {},
         streak:     local.streak    || {},
         stats:      local.stats     || {},
+        daily:      local.daily     || {},
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
@@ -108,7 +109,7 @@ export async function pullProgress() {
 
     const { data, error } = await supabase
       .from('progress')
-      .select('subjects, streak, stats, updated_at')
+      .select('subjects, streak, stats, daily, updated_at')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -118,7 +119,6 @@ export async function pullProgress() {
     }
 
     if (!data) {
-      // No remote data yet — first time on this device, nothing to pull
       return false;
     }
 
@@ -127,7 +127,7 @@ export async function pullProgress() {
       subjects: data.subjects,
       streak:   data.streak,
       stats:    data.stats,
-      daily:    local.daily, // daily state isn't synced (it's ephemeral, resets daily)
+      daily:    data.daily,
     };
 
     // If local has no progress at all, just take remote wholesale

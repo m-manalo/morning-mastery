@@ -155,6 +155,10 @@ export default function App() {
           const raw = localStorage.getItem('mm_stats_v1');
           if (raw) setStats(JSON.parse(raw));
         } catch {}
+        try {
+          const raw = localStorage.getItem('mm_daily_v2');
+          if (raw) setDailyState(JSON.parse(raw));
+        } catch {}
       }
     });
   }, []);
