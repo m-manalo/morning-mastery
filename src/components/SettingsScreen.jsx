@@ -25,16 +25,35 @@ export default function SettingsScreen({ subjects, streak, stats, onHome, onRedo
     async function loadNotifState() {
       if (!pushSupported) return;
       const permission = getNotificationPermission();
+
+      // Check browser push subscription first — this is the ground truth
+      // regardless of what Supabase says
+      if (permission === 'granted') {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const browserSub = await reg.pushManager.getSubscription();
+          if (browserSub) {
+            // Browser has an active subscription — treat as enabled
+            setNotifEnabled(true);
+          }
+        } catch {}
+      }
+
       if (permission !== 'granted') return;
 
       const uid = await ensureAnonymousSession();
       setUserId(uid);
       if (!uid) return;
 
-      const sub = await getPushSubscription(uid).catch(() => null);
-      if (sub) {
-        setNotifEnabled(sub.enabled);
-        setNotifTime(sub.notify_time?.slice(0, 5) || '08:00');
+      try {
+        const sub = await getPushSubscription(uid);
+        if (sub) {
+          setNotifEnabled(sub.enabled);
+          setNotifTime(sub.notify_time?.slice(0, 5) || '08:00');
+        }
+      } catch (err) {
+        console.warn('loadNotifState: could not fetch from Supabase:', err.message);
+        // Keep whatever state the browser push check above set
       }
     }
     loadNotifState();
