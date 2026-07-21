@@ -2,9 +2,10 @@ name: Send Daily Notifications
 
 on:
   schedule:
-    # Runs every minute, 24/7
-    - cron: '* * * * *'
-  # Allow manual trigger from GitHub Actions tab (useful for testing)
+    # Runs daily at 07:00 UTC (08:00 London BST)
+    # GitHub Actions doesn't reliably support per-minute schedules on free accounts
+    # so we run once per day and send to all enabled subscriptions
+    - cron: '0 7 * * *'
   workflow_dispatch:
 
 jobs:
