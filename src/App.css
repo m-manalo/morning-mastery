@@ -719,7 +719,10 @@ body {
 @media (max-width: 520px) {
   html, body {
     height: 100%;
-    overflow: clip; /* clip instead of hidden — blocks page scroll without consuming touch events */
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   body {
@@ -728,31 +731,37 @@ body {
   }
 
   .app-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     max-width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
   }
 
   .card-fixed {
-    flex: 1;
-    height: 100dvh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
     border-radius: 0;
     border: none;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
   }
 
   .screen-inner {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior: contain;
     padding: 1.25rem 1rem;
     padding-top: calc(1.25rem + env(safe-area-inset-top));
     padding-bottom: calc(2rem + env(safe-area-inset-bottom));

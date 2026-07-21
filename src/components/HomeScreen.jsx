@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { SUBJECT_CONFIG, DAILY_SUBJECT_ORDER } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, isDailyComplete, getWeekStreak, getTodayKey } from '../utils/gameUtils';
-import ThemePicker from './ThemePicker';
 import { playSound } from '../utils/sound';
 
 // Shorter display names for the compact ring layout
@@ -10,8 +8,7 @@ const SHORT_LABEL = {
   socialstudies: 'Social',
 };
 
-export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview, onOpenSettings, inProgress }) {
-  const [showTheme, setShowTheme] = useState(false);
+export default function HomeScreen({ subjects, streak, dailyState, themeKey, onSetTheme, onStartDaily, onOpenReview, onOpenSettings, onShowTheme, inProgress }) {
   const complete = isDailyComplete(dailyState);
   const now = new Date();
   const hour = now.getHours();
@@ -19,13 +16,6 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
 
   return (
     <div className="screen-inner">
-      {showTheme && (
-        <ThemePicker
-          themeKey={themeKey}
-          onSelect={onSetTheme}
-          onClose={() => setShowTheme(false)}
-        />
-      )}
 
       {/* Header */}
       <div className="home-header">
@@ -41,7 +31,7 @@ export default function HomeScreen({ subjects, streak, dailyState, themeKey, onS
             </div>
           )}
           <div style={{ display: 'flex', gap: 6 }}>
-            <button className="theme-toggle-btn" onClick={() => setShowTheme(true)}>
+            <button className="theme-toggle-btn" onClick={onShowTheme}>
               🎨 theme
             </button>
             <button className="theme-toggle-btn" onClick={onOpenSettings}>

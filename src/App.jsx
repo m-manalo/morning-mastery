@@ -15,6 +15,7 @@ import ReviewScreen from './components/ReviewScreen';
 import SettingsScreen from './components/SettingsScreen';
 import { playSound } from './utils/sound';
 import { pushProgress, pullProgress } from './utils/sync';
+import ThemePicker from './components/ThemePicker';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
@@ -51,6 +52,7 @@ export default function App() {
   const [reviewIndex, setReviewIndex]           = useState(0);
   const [confirmLeaveQuiz, setConfirmLeaveQuiz] = useState(false);
   const [onboardStep, setOnboardStep]           = useState(ONBOARD_STEPS.WELCOME);
+  const [showTheme, setShowTheme]               = useState(false);
   // Refs mirroring screen/onboardStep so the popstate handler (registered
   // once on mount) always re-pushes the *current* values, not whatever they
   // were when the effect first ran.
@@ -402,6 +404,7 @@ export default function App() {
             onStartDaily={startDaily}
             onOpenReview={openReview}
             onOpenSettings={openSettings}
+            onShowTheme={() => setShowTheme(true)}
             inProgress={!!(inProgressSession && inProgressSession.order?.length)}
           />
         )}
@@ -467,6 +470,15 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ThemePicker rendered at card level so overflow:scroll on screen-inner doesn't clip it */}
+        {showTheme && (
+          <ThemePicker
+            themeKey={themeKey}
+            onSelect={setThemeKey}
+            onClose={() => setShowTheme(false)}
+          />
         )}
       </div>
       <Analytics />
