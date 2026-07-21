@@ -57,20 +57,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // CSS and JS bundles — network-first so style/logic updates apply immediately
-  if (request.url.includes('/static/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
   // Sound files are network-first — they're small and change occasionally
   // during development, and a stale cached sound is a worse experience than
   // one extra network request. Falls back to cache only if offline.

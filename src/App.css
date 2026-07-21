@@ -61,6 +61,8 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
 }
@@ -717,7 +719,7 @@ body {
 @media (max-width: 520px) {
   html, body {
     height: 100%;
-    overflow: hidden;
+    overflow: clip; /* clip instead of hidden — blocks page scroll without consuming touch events */
   }
 
   body {
@@ -749,6 +751,8 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
     padding: 1.25rem 1rem;
     padding-top: calc(1.25rem + env(safe-area-inset-top));
     padding-bottom: calc(2rem + env(safe-area-inset-bottom));
