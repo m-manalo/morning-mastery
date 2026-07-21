@@ -3,7 +3,7 @@
 // All actual data (progress, streaks, theme, etc.) lives in localStorage,
 // which is untouched by this — this just caches the static files.
 
-const CACHE_NAME = 'morning-mastery-v2';
+const CACHE_NAME = 'morning-mastery-v3';
 
 // Core files needed for the app to boot offline.
 // CRA's hashed JS/CSS bundle filenames are cached on first visit via the fetch handler below.
