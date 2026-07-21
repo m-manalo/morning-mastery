@@ -66,6 +66,7 @@ export default function App() {
   // if the user navigated away. Used to gate the back button with a confirmation
   // rather than silently discarding their place in the daily.
   const quizInProgressRef = useRef(false);
+  const [mountKey, setMountKey] = useState(0);
 
   // ── Browser history integration ──
   // Every screen change pushes a history entry, so the device's native back
@@ -122,6 +123,9 @@ export default function App() {
       setScreen(target);
       if (target === SCREENS.HOME) {
         setCurrentSubject(null);
+      }
+      if (target === SCREENS.DAILY_COMPLETE) {
+        setMountKey(k => k + 1);
       }
       if (target === SCREENS.ONBOARDING) {
         setOnboardStep(e.state?.onboardStep ?? ONBOARD_STEPS.WELCOME);
@@ -291,16 +295,11 @@ export default function App() {
 
   function handleQuizComplete({ score, xpEarned, subject, correct, question, selectedIdx }) {
     if (xpEarned > 0) {
-      const prevLevel = getLevelFromXP(subjects[subject]?.xp || 0);
       const newXp = (subjects[subject]?.xp || 0) + xpEarned;
-      const newLevel = getLevelFromXP(newXp);
       setSubjects(prev => ({
         ...prev,
         [subject]: { xp: newXp }
       }));
-      if (newLevel > prevLevel) {
-        playSound('levelUp');
-      }
     }
 
     const newResults = {
@@ -424,6 +423,7 @@ export default function App() {
         )}
         {screen === SCREENS.DAILY_COMPLETE && (
           <DailyCompleteScreen
+            key={mountKey}
             results={dailyResults}
             subjects={subjects}
             streak={streak}

@@ -738,7 +738,7 @@ body {
     height: 100dvh;
     border-radius: 0;
     border: none;
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
   }

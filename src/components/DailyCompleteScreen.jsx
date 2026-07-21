@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SUBJECT_CONFIG, XP_PER_LEVEL } from '../data/questions';
 import { SUBJECT_COLORS } from '../data/themes';
 import { getLevelFromXP, getXPPercent, getXPInLevel, getWeekStreak, getStreakMilestone } from '../utils/gameUtils';
@@ -21,6 +21,12 @@ function milestoneCopy(n) {
 export default function DailyCompleteScreen({ results, subjects, streak, prevLevels, stats, onHome, onReview }) {
   const [savedQuote, setSavedQuote] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const scrollRef = useRef(null);
+
+  // Scroll to top whenever this screen mounts (e.g. returning from Review)
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, []);
   const quote = getDailyQuote();
   const weekDays = getWeekStreak(streak);
   const totalCorrect = Object.values(results).filter(r => r?.correct).length;
@@ -43,7 +49,7 @@ export default function DailyCompleteScreen({ results, subjects, streak, prevLev
   }
 
   return (
-    <div className="screen-inner">
+    <div className="screen-inner" ref={scrollRef}>
       <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
         <div className="result-icon">
           <span style={{ fontSize: 28 }}>
